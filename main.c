@@ -30,16 +30,14 @@ bool validateInput(char** input){
 }
 
 void doActionInput(char** action, int rowSize, int colSize, int matrix[rowSize][colSize]){
-   //printf("ACTION first %s\n", action[0]);
    //TODO pattern match based on keyword set, fill, new, newrand
 
    if (strcmp(action[0], "set") == 0){
-       //printf("ACTION INNER SET %s %s %s\n",action[1],action[2], action[3]);
        //> set 2 2 7 //set value in row 2 column 2 to value 7
        setPointValue(atoi(action[3]), atoi(action[1]), atoi(action[2]), int_rows, int_cols, matrix);
    } else if (strcmp(action[0], "fill") == 0){
-      fillValues(atoi(action[1]), int_rows, int_cols, matrix); 
       //> fill 3 //fill entire matrix with value 3 
+      fillValues(atoi(action[1]), int_rows, int_cols, matrix); 
    } 
      //> new 4 3 //make new 4 x 3 matrix
      //> newrand 4 3 //make new 4 x 3 matrix with random values
@@ -77,15 +75,6 @@ char** tokenize(char in[]){
     }
     free(temp);
     return list;
-}
-
-void freeList(char** list){
-    int count = 9999;//depends on list size hardcode for now
-    for (int i = 0; i < count; i++){
-        //printf("Token: %s\n", list[i]);
-        free(list[i]);
-    }
-    free(list);
 }
 
 int main(int argc, char *argv[]){
