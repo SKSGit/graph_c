@@ -61,6 +61,32 @@ void parseProgramInput(char** in, int rowSize, int colSize, int matrix[rowSize][
   doActionInput(in, int_rows, int_cols, matrix);   
 }
 
+char** tokenize(char in[]){ 
+    char* temp = strdup(in);
+    char* token = strtok(temp, " ");
+
+    char** list = NULL;
+    int count = 0;
+    
+    while(token != NULL){
+
+    list = realloc(list, (count + 1) * sizeof(char*));
+     list[count] = strdup(token);
+     (count)++;
+          token = strtok(NULL," ");
+    }
+    free(temp);
+    return list;
+}
+
+void freeList(char** list){
+    int count = 9999;//depends on list size hardcode for now
+    for (int i = 0; i < count; i++){
+        //printf("Token: %s\n", list[i]);
+        free(list[i]);
+    }
+    free(list);
+}
 
 int main(int argc, char *argv[]){
 
@@ -80,31 +106,9 @@ int main(int argc, char *argv[]){
     scanf(" %[^\n]", in);
     //printf("Scanned: %s", in);
 
-    char* temp = strdup(in);
-    char* token = strtok(temp, " ");
+    char** list = tokenize(in);
 
-    char** list = NULL;
-    int count = 0;
-    
-    while(token != NULL){
-
-    list = realloc(list, (count + 1) * sizeof(char*));
-     list[count] = strdup(token);
-     (count)++;
-          token = strtok(NULL," ");
-    }
-
-
-     parseProgramInput(list,int_rows, int_cols, matrix);
-    
-    free(temp);
-       
-     for (int i = 0; i < count; i++){
-
-        //printf("Token: %s\n", list[i]);
-        free(list[i]);
-     }
+    parseProgramInput(list,int_rows, int_cols, matrix);
     free(list);
-     }
+    }
 }
-
