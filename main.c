@@ -25,19 +25,8 @@ void fillValues(int value, int rows, int cols, int matrix[rows][cols]){
    }
 }
 
-bool validateInput(char input){
+bool validateInput(char** input){
   return true;//TODO (0 < input || input  < int_rows -1) && (0 < input || input < int_cols-1);
-}
-
-void parseProgramInput(char** in, int rowSize, int colSize, int matrix[rowSize][colSize]){
-  //TODO validate arg 'in' along with dimensions rowSize and colSize
-
-  if (validateInput(in) == false){
-     printf("Error incorrect input or dimension \n");
-     return;
-  }
-  //TODO put tokenize here maybe tokenize(in);
-  doActionInput(in, int_rows, int_cols, matrix);   
 }
 
 void doActionInput(char** action, int rowSize, int colSize, int matrix[rowSize][colSize]){
@@ -60,6 +49,18 @@ void doActionInput(char** action, int rowSize, int colSize, int matrix[rowSize][
    }
 
 }
+
+void parseProgramInput(char** in, int rowSize, int colSize, int matrix[rowSize][colSize]){
+  //TODO validate arg 'in' along with dimensions rowSize and colSize
+
+  if (validateInput(in) == false){
+     printf("Error incorrect input or dimension \n");
+     return;
+  }
+  //TODO put tokenize here maybe tokenize(in);
+  doActionInput(in, int_rows, int_cols, matrix);   
+}
+
 
 int main(int argc, char *argv[]){
 
