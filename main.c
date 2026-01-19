@@ -29,34 +29,31 @@ bool validateInput(char input){
   return true;//TODO (0 < input || input  < int_rows -1) && (0 < input || input < int_cols-1);
 }
 
-void parseProgramInput(char** in[], int rowSize, int colSize, int matrix[rowSize][colSize]){
-//TODO validate arg 'in' along with dimensions rowSize and colSize
+void parseProgramInput(char** in, int rowSize, int colSize, int matrix[rowSize][colSize]){
+  //TODO validate arg 'in' along with dimensions rowSize and colSize
 
   if (validateInput(in) == false){
      printf("Error incorrect input or dimension \n");
      return;
   }
-  //TODO tokenize(in);
-  doActionInput(in,int_rows, int_cols, matrix);   
-  //TODO doActionInput(in); //parse input keywords; set,fill,new,newrand 
-  //> set 2 2 7 //set value in row 2 column 2 to value 7
-  //> fill 3 //fill entire matrix with value 3 
-  //> new 4 3 //make new 4 x 3 matrix
-  //> newrand 4 3 //make new 4 x 3 matrix with random values
+  //TODO put tokenize here maybe tokenize(in);
+  doActionInput(in, int_rows, int_cols, matrix);   
 }
 
-void doActionInput(char** action[], int rowSize, int colSize, int matrix[rowSize][colSize]){
- //TODO pattern match based on keyword set, fill, new, newrand
-
-
+void doActionInput(char** action, int rowSize, int colSize, int matrix[rowSize][colSize]){
    //printf("ACTION first %s\n", action[0]);
+   //TODO pattern match based on keyword set, fill, new, newrand
 
    if (strcmp(action[0], "set") == 0){
        //printf("ACTION INNER SET %s %s %s\n",action[1],action[2], action[3]);
+       //> set 2 2 7 //set value in row 2 column 2 to value 7
        setPointValue(atoi(action[3]), atoi(action[1]), atoi(action[2]), int_rows, int_cols, matrix);
    } else if (strcmp(action[0], "fill") == 0){
       fillValues(atoi(action[1]), int_rows, int_cols, matrix); 
+      //> fill 3 //fill entire matrix with value 3 
    } 
+     //> new 4 3 //make new 4 x 3 matrix
+     //> newrand 4 3 //make new 4 x 3 matrix with random values
 
    else {
       printf("Unrecognized function");
