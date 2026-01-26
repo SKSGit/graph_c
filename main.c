@@ -31,6 +31,13 @@ bool validateInput(char** input){
   return true;//TODO (0 < input || input  < int_rows -1) && (0 < input || input < int_cols-1);
 }
 
+void newEmptyMatrix(int rowDim, int colDim, int preRowDim, int preColDim, int matrix [preRowDim][preColDim]){
+   int newMatrix[rowDim][colDim] = {};
+   printf("function not implemented\n");
+   //TODO figure out why this wont work matrix = newMatrix[rowDim][colDim];
+   //TODO use dynamic array with malloc and such...      
+}
+
 void doActionInput(char** action, int rowSize, int colSize, int matrix[rowSize][colSize]){
    //TODO pattern match based on keyword set, fill, new, newrand
 
@@ -42,7 +49,7 @@ void doActionInput(char** action, int rowSize, int colSize, int matrix[rowSize][
       fillValues(atoi(action[1]), int_rows, int_cols, matrix); 
    } else if (strcmp(action[0], "new") == 0){
      //> new 4 3 //make new 4 x 3 matrix
-     matrix[int_rows][int_cols] = newEmptyMatrix(atoi(action[1]), atoi(action[2]), int_rows, int_cols, matrix);
+      newEmptyMatrix(atoi(action[1]), atoi(action[2]), int_rows, int_cols, matrix);
    } 
      //> newrand 4 3 //make new 4 x 3 matrix with random values
 
@@ -81,11 +88,6 @@ char** tokenize(char in[]){
     return list;
 }
 
-int newEmptyMatrix(int rowDim, int colDim, int preRowDim, int preColDim, int matrix[preRowDim][preColDim]){
-   int newMatrix[rowDim][colDim] = {};
-   printf("function not implemented\n");
-   return newMatrix[rowDim][colDim];      
-}
 
 int main(int argc, char *argv[]){
 
