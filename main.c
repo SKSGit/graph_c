@@ -4,6 +4,7 @@
 #include <stdlib.h>
 int int_rows;
 int int_cols;
+
 void printMatrix(int *matrix,int rows, int cols){
     for(int i = 0; i < rows; i++){ 
        for(int j = 0; j < cols; j++){
@@ -25,6 +26,7 @@ void fillValues(int value, int rows, int cols, int matrix[rows][cols]){
    }
 }
 
+
 bool validateInput(char** input){
   return true;//TODO (0 < input || input  < int_rows -1) && (0 < input || input < int_cols-1);
 }
@@ -38,12 +40,14 @@ void doActionInput(char** action, int rowSize, int colSize, int matrix[rowSize][
    } else if (strcmp(action[0], "fill") == 0){
       //> fill 3 //fill entire matrix with value 3 
       fillValues(atoi(action[1]), int_rows, int_cols, matrix); 
-   } 
+   } else if (strcmp(action[0], "new") == 0){
      //> new 4 3 //make new 4 x 3 matrix
+     matrix[int_rows][int_cols] = newEmptyMatrix(atoi(action[1]), atoi(action[2]), int_rows, int_cols, matrix);
+   } 
      //> newrand 4 3 //make new 4 x 3 matrix with random values
 
    else {
-      printf("Unrecognized function");
+      printf("Unrecognized function\n");
    }
 
 }
@@ -75,6 +79,12 @@ char** tokenize(char in[]){
     }
     free(temp);
     return list;
+}
+
+int newEmptyMatrix(int rowDim, int colDim, int preRowDim, int preColDim, int matrix[preRowDim][preColDim]){
+   int newMatrix[rowDim][colDim] = {};
+   printf("function not implemented\n");
+   return newMatrix[rowDim][colDim];      
 }
 
 int main(int argc, char *argv[]){
