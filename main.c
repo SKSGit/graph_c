@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <stdlib.h>
+#include <time.h>
 int int_rows;
 int int_cols;
 
@@ -48,6 +49,18 @@ void resizeMatrix(int rowDim, int colDim, int preRowDim, int preColDim, int** ma
    
 }
 
+void newRandomMatrix(int rowDim, int colDim, int preRowDim, int preColDim, int** matrix){
+   //free(matrix);
+   *matrix = realloc(*matrix, rowDim * colDim * sizeof(int));
+
+   srand(time(NULL));   // Initialization, should only be called once.
+   for (int i = 0; i < rowDim * colDim;  i++){ 
+	   (*matrix)[i] = rand();
+   }
+   int_rows = rowDim; 
+   int_cols = colDim;
+}
+
 void doActionInput(char** action, int rowSize, int colSize, int** matrix){
    //TODO pattern match based on keyword set, fill, new, newrand
 
@@ -60,8 +73,10 @@ void doActionInput(char** action, int rowSize, int colSize, int** matrix){
    } else if (strcmp(action[0], "resize") == 0){
      //> resize 4 3 //make new 4 x 3 matrix
       resizeMatrix(atoi(action[1]), atoi(action[2]), int_rows, int_cols, matrix);
-   } 
+   } else if (strcmp(action[0], "newrand") == 0){
      //> newrand 4 3 //make new 4 x 3 matrix with random values
+     newRandomMatrix(atoi(action[1]), atoi(action[2]), int_rows, int_cols, matrix);
+   }
    else {
       printf("Unrecognized function\n");
    }
