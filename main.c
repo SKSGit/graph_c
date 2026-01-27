@@ -9,7 +9,7 @@ void printMatrix(int *matrix){
     for(int i = 0; i < int_rows; i++){ 
        for(int j = 0; j < int_cols; j++){
           printf("%d\t", matrix[i * int_cols + j]);
-//printf("%d\t", *(matrix + i * cols + j));
+        //printf("%d\t", *(matrix + i * cols + j));
        }
        printf("\n"); 
    }
@@ -20,11 +20,6 @@ void setPointValue(int value, int row, int col, int rowSize, int colSize, int** 
 }
 
 void fillValues(int value, int rows, int cols, int** matrix){
-  //  for(int i = 0; i < int_rows; i++){ 
-  //     for(int j = 0; j < int_cols; j++){
-  //       matrix[i * int_cols + j] = value;
-  //     }
-  // }
   for (int i = 0; i < int_cols*int_rows; i++){ 
 	   (*matrix)[i] = value;
    } 
@@ -34,7 +29,7 @@ bool validateInput(char** input){
   return true;//TODO (0 < input || input  < int_rows -1) && (0 < input || input < int_cols-1);
 }
 
-void resizeMatrix(int rowDim, int colDim, int preRowDim, int preColDim, int** matrix){ //pass a pointer to the pointer, otherwise you will only modify local copy and caller points to old memory block
+void resizeMatrix(int rowDim, int colDim, int preRowDim, int preColDim, int** matrix){ //pass a pointer to the pointer, otherwise you will only modify local copy and caller points to old memory block, (make sure functions before this forward the pointer as ** otherwise you risk only having a copy of the pointer) 
 //If shrinking, it simply marks the unused tail as free
 //If moving, it copies the old data into a new smaller block
 //You never free individual elements
@@ -80,7 +75,6 @@ void parseProgramInput(char** in, int rowSize, int colSize, int** matrix){
      printf("Error incorrect input or dimension \n");
      return;
   }
-  //TODO put tokenize here maybe tokenize(in);
   doActionInput(in, int_rows, int_cols, matrix);   
 }
 
@@ -126,6 +120,6 @@ int main(int argc, char *argv[]){
     char** list = tokenize(in);
 
     parseProgramInput(list, int_rows, int_cols, &matrix);
-    //free(list);
+    free(list);
     }
 }
