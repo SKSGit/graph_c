@@ -10,7 +10,6 @@ void printMatrix(int *matrix){
     for(int i = 0; i < int_rows; i++){ 
        for(int j = 0; j < int_cols; j++){
           printf("%d\t", matrix[i * int_cols + j]);
-        //printf("%d\t", *(matrix + i * cols + j));
        }
        printf("\n"); 
    }
@@ -50,7 +49,6 @@ void resizeMatrix(int rowDim, int colDim, int preRowDim, int preColDim, int** ma
 }
 
 void newRandomMatrix(int rowDim, int colDim, int preRowDim, int preColDim, int** matrix){
-   //free(matrix);
    *matrix = realloc(*matrix, rowDim * colDim * sizeof(int));
 
    srand(time(NULL));   // Initialization, should only be called once.
@@ -62,8 +60,6 @@ void newRandomMatrix(int rowDim, int colDim, int preRowDim, int preColDim, int**
 }
 
 void doActionInput(char** action, int rowSize, int colSize, int** matrix){
-   //TODO pattern match based on keyword set, fill, new, newrand
-
    if (strcmp(action[0], "set") == 0){
        //> set 2 2 7 //set value in row 2 column 2 to value 7
        setPointValue(atoi(action[3]), atoi(action[1]), atoi(action[2]), int_rows, int_cols, matrix);
@@ -71,7 +67,7 @@ void doActionInput(char** action, int rowSize, int colSize, int** matrix){
       //> fill 3 //fill entire matrix with value 3 
       fillValues(atoi(action[1]), int_rows, int_cols, matrix); 
    } else if (strcmp(action[0], "resize") == 0){
-     //> resize 4 3 //make new 4 x 3 matrix
+     //> resize 4 3 //resize existing matrix to 4 x 3
       resizeMatrix(atoi(action[1]), atoi(action[2]), int_rows, int_cols, matrix);
    } else if (strcmp(action[0], "newrand") == 0){
      //> newrand 4 3 //make new 4 x 3 matrix with random values
@@ -111,6 +107,17 @@ char** tokenize(char in[]){
     return list;
 }
 
+void saveMatrixVariable(){
+   //TODO save a created matrix as a variable in a map (for future matrix calculations)
+}
+
+void multiplyMatrixWithInteger(){
+   //TODO multiply all values in matrix, with given int
+}
+
+void multiplyMatrixWithMatrix(){
+   //TODO multiply matrix a (m x n) with matrix b (m x k), so the product is n x k
+}
 
 int main(int argc, char *argv[]){
 
@@ -124,13 +131,14 @@ int main(int argc, char *argv[]){
    printf("This is graph program: Hello %s \n","User");
    printf("The Graph dimension is %i x %i\n", int_rows, int_cols);
    printf("> set 2 2 7 //set value in row 2 column 2 to value 7\n");
-   printf("> fill 3 //fill entire matrix with value 3\n"); 
+   printf("> fill 3 //fill entire matrix with value 3\n");
+   printf("> resize 4 3 //make new 4 x 3 matrix\n");
+   printf("> newrand 4 3 //make new 4 x 3 matrix with random values\n");
    while(1){
     printMatrix(matrix);    
 
     char in[100];
     scanf(" %[^\n]", in);
-    //printf("Scanned: %s", in);
 
     char** list = tokenize(in);
 
