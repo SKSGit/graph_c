@@ -59,6 +59,20 @@ void newRandomMatrix(int rowDim, int colDim, int preRowDim, int preColDim, int**
    int_cols = colDim;
 }
 
+void multiplyMatrixWithInteger(int value, int rows, int cols, int** matrix){
+   for (int i = 0; i < int_cols*int_rows; i++){ 
+	   (*matrix)[i] = value * (*matrix)[i];
+   } 
+}
+
+void saveMatrixVariable(){
+   //TODO save a created matrix as a variable in a map (for future matrix calculations)
+}
+
+void multiplyMatrixWithMatrix(){
+   //TODO multiply matrix a (m x n) with matrix b (m x k), so the product is n x k
+}
+
 void doActionInput(char** action, int rowSize, int colSize, int** matrix){
    if (strcmp(action[0], "set") == 0){
        //> set 2 2 7 //set value in row 2 column 2 to value 7
@@ -72,6 +86,9 @@ void doActionInput(char** action, int rowSize, int colSize, int** matrix){
    } else if (strcmp(action[0], "newrand") == 0){
      //> newrand 4 3 //make new 4 x 3 matrix with random values
      newRandomMatrix(atoi(action[1]), atoi(action[2]), int_rows, int_cols, matrix);
+   } else if (strcmp(action[0], "mult") == 0){
+     //> mult 2 //multiply each value in matrix by 2
+     multiplyMatrixWithInteger(atoi(action[1]), int_rows, int_cols, matrix);
    }
    else {
       printf("Unrecognized function\n");
@@ -107,18 +124,6 @@ char** tokenize(char in[]){
     return list;
 }
 
-void saveMatrixVariable(){
-   //TODO save a created matrix as a variable in a map (for future matrix calculations)
-}
-
-void multiplyMatrixWithInteger(){
-   //TODO multiply all values in matrix, with given int
-}
-
-void multiplyMatrixWithMatrix(){
-   //TODO multiply matrix a (m x n) with matrix b (m x k), so the product is n x k
-}
-
 int main(int argc, char *argv[]){
 
    int_rows = *argv[1] - '0'; //first matrix dimension program arg
@@ -134,6 +139,7 @@ int main(int argc, char *argv[]){
    printf("> fill 3 //fill entire matrix with value 3\n");
    printf("> resize 4 3 //make new 4 x 3 matrix\n");
    printf("> newrand 4 3 //make new 4 x 3 matrix with random values\n");
+   printf("> mult 2 //multiply each value in matrix by 2\n");
    while(1){
     printMatrix(matrix);    
 
