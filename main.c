@@ -50,6 +50,7 @@ void printMatrixGivenDim(int *fetched_matrix, int rows, int cols){//iterates bas
 
 void setPointValue(int value, int row, int col, int rowSize, int colSize, int** matrix){
   (*matrix)[row * int_cols + col] = value; //must pass dimensions rowSize colSize, otherwise C cannot determine where to place value as the array would then be varriable length array (VLA). So pointer arithmetic would fail
+					   //TODO prevent setting value out of bounds of array. C doesnt care if you mess up.
 }
 
 void fillValues(int value, int rows, int cols, int** matrix){
@@ -126,17 +127,26 @@ void doActionInput(char** action, int rowSize, int colSize, int* matrix, int** m
      thisMatrix -> id = atoi(action[1]);
      thisMatrix -> column = int_cols;
      thisMatrix -> row = int_rows;
-     
+    
      memcpy(thisMatrix -> matrix_mem, matrix, int_rows * int_cols * sizeof(int));
 
      save_matrix(thisMatrix);
-   } else if (strcmp(action[0], "find") == 0){
-     //> find 2 //find the saved matrix by looking up key 2
+   } else if (strcmp(action[0], "load") == 0){
+     //> load 2 //find the saved matrix by looking up key 2
      struct my_struct *thisMatrix = find_matrix(atoi(action[1]));
      int *matrix_mem = thisMatrix -> matrix_mem;
      int rows = thisMatrix -> row;
      int cols = thisMatrix -> column;
-
+   
+     if (int_rows * int_cols * sizeof(int) > rows * cols * sizeof(int)){
+        //works when loading small to big, 
+        memcpy(matrix, matrix_mem, rows * cols * sizeof(int)); 
+        int_rows = rows; 
+        int_cols = cols;
+     } else {
+	//works when loading big to small
+        memcpy(matrix, matrix_mem, int_rows * int_cols * sizeof(int)); 
+     }
      printMatrixGivenDim(matrix_mem, rows, cols);
    }
    else {
@@ -190,7 +200,7 @@ int main(int argc, char *argv[]){
    printf("> newrand 4 3 //make new 4 x 3 matrix with random values\n");
    printf("> mult 2 //multiply each value in matrix by 2\n");
    printf("> save 2 //save matrix with with key 2\n"); 
-   printf("> find 2 //find the saved matrix by looking up key 2\n");
+   printf("> load 2 //find the saved matrix by looking up key 2\n");
    while(1){
     printMatrixGlobalDim(matrix);    
 
