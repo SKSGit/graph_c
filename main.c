@@ -16,7 +16,6 @@ struct my_struct {
     int row;
     int *matrix_mem;
 };
-
 struct my_struct *saved_matrices = NULL;
 
 
@@ -28,6 +27,18 @@ struct my_struct *find_matrix(int id) {
     struct my_struct *s;
     HASH_FIND_INT( saved_matrices, &id, s );
     return s;
+}
+
+void delete_all_matrices()
+{
+    struct my_struct *current_user;
+    struct my_struct *tmp;
+
+    HASH_ITER(hh, saved_matrices, current_user, tmp) {
+        HASH_DEL(saved_matrices, current_user);  /* delete it (users advances to next) */
+        free(current_user -> matrix_mem);
+	free(current_user);             /* free it */
+    }
 }
 
 void printMatrixGlobalDim(int *given_matrix){//internally uses latest matrix dimensions
@@ -104,50 +115,81 @@ void multiplyMatrixWithMatrix(){
 }
 
 void doActionInput(char** action, int rowSize, int colSize, int* matrix, int** matrixp){
-   if (strcmp(action[0], "set") == 0){
+   
+   if (strcmp(action[0], "exit") == 0){
+      free(matrix);
+      free(action[0]);      
+      delete_all_matrices();
+      exit(EXIT_SUCCESS);
+   } else if (strcmp(action[0], "set") == 0){
      //> set 2 2 7 //set value in row 2 column 2 to value 7
        setPointValue(atoi(action[3]), atoi(action[1]), atoi(action[2]), int_rows, int_cols, &matrix);
+       free(action[0]); 
+       free(action[1]);
+       free(action[2]);
+       free(action[3]);  
    } else if (strcmp(action[0], "fill") == 0){
      //> fill 3 //fill entire matrix with value 3 
-      fillValues(atoi(action[1]), int_rows, int_cols, &matrix); 
+      fillValues(atoi(action[1]), int_rows, int_cols, &matrix);
+      free(action[0]); 
+      free(action[1]);
    } else if (strcmp(action[0], "resize") == 0){
      //> resize 4 3 //resize existing matrix to 4 x 3
       resizeMatrix(atoi(action[1]), atoi(action[2]), int_rows, int_cols, matrixp);
+      free(action[0]); 
+      free(action[1]);
+      free(action[2]);
    } else if (strcmp(action[0], "newrand") == 0){
      //> newrand 4 3 //make new 4 x 3 matrix with random values
      newRandomMatrix(atoi(action[1]), atoi(action[2]), int_rows, int_cols, matrixp);
+     free(action[0]); 
+     free(action[1]);
+     free(action[2]);
    } else if (strcmp(action[0], "mult") == 0){
      //> mult 2 //multiply each value in matrix by 2
      multiplyMatrixWithInteger(atoi(action[1]), int_rows, int_cols, &matrix);
+     free(action[0]); 
+     free(action[1]);
    } else if (strcmp(action[0], "save") == 0){
      //> save 2 //save matrix with with key 2
-     struct my_struct *thisMatrix = malloc(sizeof(struct my_struct));
-
-     thisMatrix->matrix_mem = malloc(int_rows * int_cols * sizeof(int));
-     thisMatrix -> id = atoi(action[1]);
-     thisMatrix -> column = int_cols;
-     thisMatrix -> row = int_rows;
+     
+     struct my_struct *thisMatrixToSave = malloc(sizeof(struct my_struct));
+     thisMatrixToSave -> matrix_mem = malloc(int_rows * int_cols * sizeof(int));
+     thisMatrixToSave -> id = atoi(action[1]);
+     thisMatrixToSave -> column = int_cols;
+     thisMatrixToSave -> row = int_rows;
     
-     memcpy(thisMatrix -> matrix_mem, matrix, int_rows * int_cols * sizeof(int));
+     memcpy(thisMatrixToSave -> matrix_mem, matrix, int_rows * int_cols * sizeof(int));
 
-     save_matrix(thisMatrix);
+     save_matrix(thisMatrixToSave);
+     free(action[0]); 
+     free(action[1]);
+
    } else if (strcmp(action[0], "load") == 0){
      //> load 2 //find the saved matrix by looking up key 2
-     struct my_struct *thisMatrix = find_matrix(atoi(action[1]));
-     int *matrix_mem = thisMatrix -> matrix_mem;
-     int rows = thisMatrix -> row;
-     int cols = thisMatrix -> column;
+     struct my_struct *thisMatrixToSave = find_matrix(atoi(action[1]));
+     int *matrix_mem = thisMatrixToSave -> matrix_mem;
+     int rows = thisMatrixToSave -> row;
+     int cols = thisMatrixToSave -> column;
    
-     if (int_rows * int_cols * sizeof(int) > rows * cols * sizeof(int)){
-        //works when loading small to big, 
-        memcpy(matrix, matrix_mem, rows * cols * sizeof(int)); 
-        int_rows = rows; 
-        int_cols = cols;
+     if (int_rows * int_cols < rows * cols ){
+        //works when loading big matrix to small current matrix
+        *matrixp = realloc(*matrixp, rows * cols * sizeof(int));
+	for (int i = 0; i < rows * cols;  i++){ 
+	   (*matrixp)[i] = matrix_mem[i];
+        }
      } else {
-	//works when loading big to small
-        memcpy(matrix, matrix_mem, int_rows * int_cols * sizeof(int)); 
+        memcpy(matrix, matrix_mem, rows * cols * sizeof(int)); 
      }
-     printMatrixGivenDim(matrix_mem, rows, cols);
+
+     //printMatrixGivenDim(matrix_mem, rows, cols);
+
+     int_rows = rows;
+     int_cols = cols;
+
+     free(action[0]); 
+     free(action[1]);
+
    }
    else {
       printf("Unrecognized function\n");
@@ -212,7 +254,5 @@ int main(int argc, char *argv[]){
     parseProgramInput(list, int_rows, int_cols, matrix, &matrix);
         
     free(list);
-    //free(saved_matrices); //TODO consider where to free saved matrices
-
     }
 }
