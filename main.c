@@ -127,17 +127,9 @@ void doActionInput(char** action, int rowSize, int colSize, int* matrix, int** m
      thisMatrix -> column = int_cols;
      thisMatrix -> row = int_rows;
      
-     printf("save: int_rows=%d int_cols=%d\n", int_rows, int_cols); 
-     printf("save: matrix ptr=%p\n", (void*)matrix); 
-     printf("save: matrix[0]=%d\n", matrix[0]); 
-     printf("save: matrix_mem[0] before memcpy=%d\n", thisMatrix->matrix_mem[0]);
      memcpy(thisMatrix -> matrix_mem, matrix, int_rows * int_cols * sizeof(int));
-     printf("save: matrix_mem[0] after memcpy=%d\n", thisMatrix->matrix_mem[0]);     
-     printf("saving pointer: %p\n", (void*)thisMatrix->matrix_mem);
 
-     printf("before save: first = %d\n", thisMatrix->matrix_mem[0]);
      save_matrix(thisMatrix);
-     printf("after save: first = %d\n", thisMatrix->matrix_mem[0]);
    } else if (strcmp(action[0], "find") == 0){
      //> find 2 //find the saved matrix by looking up key 2
      struct my_struct *thisMatrix = find_matrix(atoi(action[1]));
@@ -145,10 +137,6 @@ void doActionInput(char** action, int rowSize, int colSize, int* matrix, int** m
      int rows = thisMatrix -> row;
      int cols = thisMatrix -> column;
 
-     printf("before find-print: first = %d\n", thisMatrix->matrix_mem[0]);
-     printf("matrix_mem = %p\n", (void*)thisMatrix->matrix_mem); 
-     printf("first element = %d\n", thisMatrix->matrix_mem[0]);
-     printf("found pointer: %p\n", (void*)thisMatrix->matrix_mem);
      printMatrixGivenDim(matrix_mem, rows, cols);
    }
    else {
