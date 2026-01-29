@@ -3,13 +3,46 @@
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
+#include "uthash.h"
+
 int int_rows;
 int int_cols;
 
-void printMatrix(int *matrix){
+// map for storing matrices
+struct my_struct {
+    UT_hash_handle hh; /* makes this structure hashable */
+    int id;            /* we'll use this field as the key */
+    int column;
+    int row;
+    int *matrix_mem;
+};
+
+struct my_struct *saved_matrices = NULL;
+
+
+void save_matrix(struct my_struct *s) {
+    HASH_ADD_INT( saved_matrices, id, s );
+}
+
+struct my_struct *find_matrix(int id) {
+    struct my_struct *s;
+    HASH_FIND_INT( saved_matrices, &id, s );
+    return s;
+}
+
+void printMatrixGlobalDim(int *given_matrix){//internally uses latest matrix dimensions
     for(int i = 0; i < int_rows; i++){ 
        for(int j = 0; j < int_cols; j++){
-          printf("%d\t", matrix[i * int_cols + j]);
+          printf("%d\t", given_matrix[i * int_cols + j]);
+       }
+       printf("\n"); 
+   }
+}
+
+void printMatrixGivenDim(int *fetched_matrix, int rows, int cols){//iterates based on given arguments
+    for(int i = 0; i < rows; i++){ 
+       for(int j = 0; j < cols; j++){
+          printf("%d\t", fetched_matrix[i * cols + j]);
        }
        printf("\n"); 
    }
@@ -65,30 +98,58 @@ void multiplyMatrixWithInteger(int value, int rows, int cols, int** matrix){
    } 
 }
 
-void saveMatrixVariable(){
-   //TODO save a created matrix as a variable in a map (for future matrix calculations)
-}
-
 void multiplyMatrixWithMatrix(){
    //TODO multiply matrix a (m x n) with matrix b (m x k), so the product is n x k
 }
 
-void doActionInput(char** action, int rowSize, int colSize, int** matrix){
+void doActionInput(char** action, int rowSize, int colSize, int* matrix, int** matrixp){
    if (strcmp(action[0], "set") == 0){
-       //> set 2 2 7 //set value in row 2 column 2 to value 7
-       setPointValue(atoi(action[3]), atoi(action[1]), atoi(action[2]), int_rows, int_cols, matrix);
+     //> set 2 2 7 //set value in row 2 column 2 to value 7
+       setPointValue(atoi(action[3]), atoi(action[1]), atoi(action[2]), int_rows, int_cols, &matrix);
    } else if (strcmp(action[0], "fill") == 0){
-      //> fill 3 //fill entire matrix with value 3 
-      fillValues(atoi(action[1]), int_rows, int_cols, matrix); 
+     //> fill 3 //fill entire matrix with value 3 
+      fillValues(atoi(action[1]), int_rows, int_cols, &matrix); 
    } else if (strcmp(action[0], "resize") == 0){
      //> resize 4 3 //resize existing matrix to 4 x 3
-      resizeMatrix(atoi(action[1]), atoi(action[2]), int_rows, int_cols, matrix);
+      resizeMatrix(atoi(action[1]), atoi(action[2]), int_rows, int_cols, matrixp);
    } else if (strcmp(action[0], "newrand") == 0){
      //> newrand 4 3 //make new 4 x 3 matrix with random values
-     newRandomMatrix(atoi(action[1]), atoi(action[2]), int_rows, int_cols, matrix);
+     newRandomMatrix(atoi(action[1]), atoi(action[2]), int_rows, int_cols, matrixp);
    } else if (strcmp(action[0], "mult") == 0){
      //> mult 2 //multiply each value in matrix by 2
-     multiplyMatrixWithInteger(atoi(action[1]), int_rows, int_cols, matrix);
+     multiplyMatrixWithInteger(atoi(action[1]), int_rows, int_cols, &matrix);
+   } else if (strcmp(action[0], "save") == 0){
+     //> save 2 //save matrix with with key 2
+     struct my_struct *thisMatrix = malloc(sizeof(struct my_struct));
+
+     thisMatrix->matrix_mem = malloc(int_rows * int_cols * sizeof(int));
+     thisMatrix -> id = atoi(action[1]);
+     thisMatrix -> column = int_cols;
+     thisMatrix -> row = int_rows;
+     
+     printf("save: int_rows=%d int_cols=%d\n", int_rows, int_cols); 
+     printf("save: matrix ptr=%p\n", (void*)matrix); 
+     printf("save: matrix[0]=%d\n", matrix[0]); 
+     printf("save: matrix_mem[0] before memcpy=%d\n", thisMatrix->matrix_mem[0]);
+     memcpy(thisMatrix -> matrix_mem, matrix, int_rows * int_cols * sizeof(int));
+     printf("save: matrix_mem[0] after memcpy=%d\n", thisMatrix->matrix_mem[0]);     
+     printf("saving pointer: %p\n", (void*)thisMatrix->matrix_mem);
+
+     printf("before save: first = %d\n", thisMatrix->matrix_mem[0]);
+     save_matrix(thisMatrix);
+     printf("after save: first = %d\n", thisMatrix->matrix_mem[0]);
+   } else if (strcmp(action[0], "find") == 0){
+     //> find 2 //find the saved matrix by looking up key 2
+     struct my_struct *thisMatrix = find_matrix(atoi(action[1]));
+     int *matrix_mem = thisMatrix -> matrix_mem;
+     int rows = thisMatrix -> row;
+     int cols = thisMatrix -> column;
+
+     printf("before find-print: first = %d\n", thisMatrix->matrix_mem[0]);
+     printf("matrix_mem = %p\n", (void*)thisMatrix->matrix_mem); 
+     printf("first element = %d\n", thisMatrix->matrix_mem[0]);
+     printf("found pointer: %p\n", (void*)thisMatrix->matrix_mem);
+     printMatrixGivenDim(matrix_mem, rows, cols);
    }
    else {
       printf("Unrecognized function\n");
@@ -96,14 +157,14 @@ void doActionInput(char** action, int rowSize, int colSize, int** matrix){
 
 }
 
-void parseProgramInput(char** in, int rowSize, int colSize, int** matrix){
+void parseProgramInput(char** in, int rowSize, int colSize, int* matrix, int** matrixp){
   //TODO validate arg 'in' along with dimensions rowSize and colSize
 
   if (validateInput(in) == false){
      printf("Error incorrect input or dimension \n");
      return;
   }
-  doActionInput(in, int_rows, int_cols, matrix);   
+  doActionInput(in, int_rows, int_cols, matrix, matrixp);   
 }
 
 char** tokenize(char in[]){ 
@@ -140,15 +201,20 @@ int main(int argc, char *argv[]){
    printf("> resize 4 3 //make new 4 x 3 matrix\n");
    printf("> newrand 4 3 //make new 4 x 3 matrix with random values\n");
    printf("> mult 2 //multiply each value in matrix by 2\n");
+   printf("> save 2 //save matrix with with key 2\n"); 
+   printf("> find 2 //find the saved matrix by looking up key 2\n");
    while(1){
-    printMatrix(matrix);    
+    printMatrixGlobalDim(matrix);    
 
     char in[100];
     scanf(" %[^\n]", in);
 
     char** list = tokenize(in);
 
-    parseProgramInput(list, int_rows, int_cols, &matrix);
+    parseProgramInput(list, int_rows, int_cols, matrix, &matrix);
+        
     free(list);
+    //free(saved_matrices); //TODO consider where to free saved matrices
+
     }
 }
