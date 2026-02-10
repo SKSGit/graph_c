@@ -110,8 +110,181 @@ void multiplyMatrixWithInteger(int value, int rows, int cols, int** matrix){
    } 
 }
 
-void multiplyMatrixWithMatrix(){
-   //TODO multiply matrix a (m x n) with matrix b (m x k), so the product is n x k
+int product(int a, int b){
+   int product = 0;
+   product = a * b;
+   return product;
+}
+
+int* iterateSumProductOverSndMatrixCol(int* fstMatrRow, int n1, int** matrix, int k, int n2, int* sequenceOfDotProducts){
+ int sndMatrixCol[k];
+ int offsetCol = 0;
+
+int dot_product = 0;
+
+for (int i = 0 ; i < n1; i++){
+     int currentValue = (fstMatrRow)[i];
+
+//printf("index: %d AAAH: %d\n", i,  currentValue);
+}
+sequenceOfDotProducts = realloc(sequenceOfDotProducts, (k));
+
+ for (int i = 0; i < k; i++){
+       offsetCol = i;
+    //   printf("index i: %d\n", i);
+
+    for (int j = offsetCol; j < n2 * k; j=j+k){
+       sndMatrixCol[i] = (*matrix)[j];
+    //   printf("index j: %d, sndMatrixCol: %d, matrix: %d\n", j, sndMatrixCol[i], (*matrix)[i]);
+
+    }
+
+    for (int f = 0; f < n1; f++){
+    //   printf("fstMatrixRow: %d sndMatrixCol: %d\n", fstMatrRow[f], sndMatrixCol[i]);
+
+       dot_product += fstMatrRow[f] * sndMatrixCol[i];
+    }
+  //  printf("Dot Product: %d\n", dot_product);
+    sequenceOfDotProducts[i] = dot_product;
+    dot_product = 0;
+    
+ }
+for (int i = 0 ; i < k; i++){
+     int currentValue = (sndMatrixCol)[i];
+//printf("index: %d currentValue: %d\n", i, currentValue);
+}
+
+return sequenceOfDotProducts;
+}
+
+//multiply matrix a (m x n) with matrix b (n x k), so the product is m x k
+void multiplyMatrixWithMatrix(int matrixId, int grow, int gcols, int** matrix){
+   
+   struct my_struct *thisMatrixToSave = find_matrix(matrixId);
+   int *matrix_mem = thisMatrixToSave -> matrix_mem;
+   int rows = thisMatrixToSave -> row;
+   int cols = thisMatrixToSave -> column;
+
+   //first: m x n1, 
+   int m = rows;
+   int n1 = cols;
+   printf("m: %d, n1: %d\n", m, n1);
+
+   //second: n2 x k
+   int n2 = int_rows;
+   int k = int_cols;
+   printf("n2: %d, k: %d\n", n2, k);
+   
+   if (n1 != n2){
+      printf("column and row does not match between both matrices, can't calculate\n");
+      return;
+   }  
+   int result_cols = 0;
+   int largest_cols = 0;
+   int largest_rows = 0;
+   if (m > n2){
+      largest_rows = m;
+   } else {
+      largest_rows = n2;
+   }
+   
+   if (n1 > k){
+      largest_cols = n1;
+   } else {
+      largest_cols = k;
+   }
+   
+   if (rows > int_cols){//stored matrix is largest dim
+      result_cols = int_cols;
+   } else {//current matrix is largest dim
+      result_cols = cols;
+   }
+
+   //new matrix m x k
+   int *result_matrix = malloc(m* k * sizeof(int)); //flat buffer/single contiguous block of memory
+
+ int fstMatrixRow[n1];
+for (int i = 0; i < n1; i++){
+	   fstMatrixRow[i] = 0;
+  }
+for (int i = 0 ; i < n1; i++){
+     int currentValue = (fstMatrixRow)[i];
+
+//printf("index: %d resultcurrentValue: %d\n", i,  currentValue);
+}
+ int offsetRow = 0;
+ int counter = 0;
+
+ int sndMatrixCol[k];
+ int offsetCol = 0;
+
+int* result = malloc(k); 
+int offsetResultIndex = 0;
+ for (int i = 0; i < m * n1; i=i+n1){
+	 if (i == 0){
+	    offsetRow = 0;
+	 } else {
+	    offsetRow += n1;
+	 }
+	 if (counter >= n1){
+	    counter = 0;
+	 }
+//    printf("index i: %d\n", i);
+    for (int j = offsetRow; j < offsetRow + n1; j++){
+//printf("index j: %d, counter: %d\n", j, counter);
+//printf("fstMatrixRow: %d, matrix_mem: %d\n", fstMatrixRow[counter], matrix_mem[j]);
+       fstMatrixRow[counter] = matrix_mem[j];
+//       printf("index j: %d, fstMatrixRow: %d, matrix_mem: %d\n", j, fstMatrixRow[counter], matrix_mem[j]);
+       counter += 1;
+    }
+    result = iterateSumProductOverSndMatrixCol(fstMatrixRow, n1, matrix, k, n2, result);
+for (int i = 0 ; i < k; i++){
+     int currentValue = result[i];
+//printf("RESULTTTTTindex: %d currentValue: %d\n", i,  currentValue);
+}
+      for (int i = offsetResultIndex, j = 0; i <  k + offsetResultIndex ;  i++, j++){ 
+	   (result_matrix)[i] = result[j];
+	   //printf("fill index: %d\n", i);
+    }
+      offsetResultIndex += k;
+      
+ }
+for (int i = 0 ; i < k*m; i++){
+     int currentValue = (*matrix)[i];
+//printf("Mindex: %d currentValue: %d\n", i,  currentValue);
+}
+//printMatrixGivenDim(result_matrix, m, k);
+//printMatrixGivenDim(*matrix, n2, k);
+
+*matrix = realloc(*matrix, m * k *sizeof(int));
+for (int i = 0; i < m * k; i++){
+//   printf("i:%d\n", i);
+   (*matrix)[i] = result_matrix[i];
+}
+//printMatrixGivenDim(*matrix, m, k);
+
+
+
+//for (int i = 0 ; i < m; i++){
+//     int currentValue = (fstMatrixRow)[i];
+//printf("index: %d currentValue: %d\n", i,  currentValue);
+//}
+//printf("HELLO");
+//for (int i = 0 ; i < k; i++){
+//     int currentValue = (result)[i];
+//
+//printf("index: %d resultcurrentValue: %d\n", i,  currentValue);
+//}
+//
+//for (int i = 0 ; i < k*m; i++){
+//     int currentValue = (result_matrix)[i];
+//printf("index: %d currentValue: %d\n", i,  currentValue);
+//}
+
+   int_rows = m; 
+   int_cols = k;
+   free(result);
+   free(result_matrix);
 }
 
 void doActionInput(char** action, int rowSize, int colSize, int* matrix, int** matrixp){
@@ -190,6 +363,10 @@ void doActionInput(char** action, int rowSize, int colSize, int* matrix, int** m
      free(action[0]); 
      free(action[1]);
 
+   } else if (strcmp(action[0], "mm") == 0){
+      multiplyMatrixWithMatrix(atoi(action[1]), int_rows, int_cols, matrixp);
+     free(action[0]); 
+     free(action[1]);
    }
    else {
       printf("Unrecognized function\n");
