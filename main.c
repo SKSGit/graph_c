@@ -420,6 +420,7 @@ int main(int argc, char *argv[]){
    printf("> mult 2 //multiply each value in matrix by 2\n");
    printf("> save 2 //save matrix with with key 2\n"); 
    printf("> load 2 //find the saved matrix by looking up key 2\n");
+   printf("> mm 2 //find the saved matrix by looking up key 2, then multiply it with matrix in current context\n");
    while(1){
     printMatrixGlobalDim(matrix);    
 
