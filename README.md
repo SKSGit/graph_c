@@ -7,6 +7,7 @@ Steps to run:
 
 Example:
 ```printf "fill 2\n set 1 2 9\nsave 2\nnewrand 3 5\nfill 4\nmm 2\nexit") | ./a.out 7 3```
+
 The above command, executes the following inside the program:
 1. generates 7x3 matrix
 2. fills above 7x3 matrix with value 2s
