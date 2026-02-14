@@ -6,7 +6,7 @@ Steps to run:
 3. run ```./a.out 3 3```
 
 Example:
-```printf "fill 2\n set 1 2 9\nsave 2\nnewrand 3 5\nfill 4\nmm 2\nexit") | ./a.out 7 3```
+```/a.out 7 3 < <(printf "fill 2\nset 1 2 9\nsave 2\nnewrand 3 5\nfill 4\nmm 2\nexit")```
 
 The above command, executes the following inside the program:
 1. generates 7x3 matrix
