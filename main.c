@@ -122,37 +122,24 @@ int* iterateSumProductOverSndMatrixCol(int* fstMatrRow, int n1, int** matrix, in
 
 int dot_product = 0;
 
-for (int i = 0 ; i < n1; i++){
-     int currentValue = (fstMatrRow)[i];
-
-//printf("index: %d AAAH: %d\n", i,  currentValue);
-}
 sequenceOfDotProducts = realloc(sequenceOfDotProducts, (k) * sizeof(int) );
 
  for (int i = 0; i < k; i++){
        offsetCol = i;
-    //   printf("index i: %d\n", i);
 
     for (int j = offsetCol; j < n2 * k; j=j+k){
        sndMatrixCol[i] = (*matrix)[j];
-    //   printf("index j: %d, sndMatrixCol: %d, matrix: %d\n", j, sndMatrixCol[i], (*matrix)[i]);
 
     }
 
     for (int f = 0; f < n1; f++){
-    //   printf("fstMatrixRow: %d sndMatrixCol: %d\n", fstMatrRow[f], sndMatrixCol[i]);
 
        dot_product += fstMatrRow[f] * sndMatrixCol[i];
     }
-  //  printf("Dot Product: %d\n", dot_product);
     sequenceOfDotProducts[i] = dot_product;
     dot_product = 0;
     
  }
-for (int i = 0 ; i < k; i++){
-     int currentValue = (sndMatrixCol)[i];
-//printf("index: %d currentValue: %d\n", i, currentValue);
-}
 
 return sequenceOfDotProducts;
 }
@@ -207,11 +194,7 @@ void multiplyMatrixWithMatrix(int matrixId, int grow, int gcols, int** matrix){
 for (int i = 0; i < n1; i++){
 	   fstMatrixRow[i] = 0;
   }
-for (int i = 0 ; i < n1; i++){
-     int currentValue = (fstMatrixRow)[i];
 
-//printf("index: %d resultcurrentValue: %d\n", i,  currentValue);
-}
  int offsetRow = 0;
  int counter = 0;
 
@@ -229,57 +212,24 @@ int offsetResultIndex = 0;
 	 if (counter >= n1){
 	    counter = 0;
 	 }
-//    printf("index i: %d\n", i);
     for (int j = offsetRow; j < offsetRow + n1; j++){
-//printf("index j: %d, counter: %d\n", j, counter);
-//printf("fstMatrixRow: %d, matrix_mem: %d\n", fstMatrixRow[counter], matrix_mem[j]);
        fstMatrixRow[counter] = matrix_mem[j];
-//       printf("index j: %d, fstMatrixRow: %d, matrix_mem: %d\n", j, fstMatrixRow[counter], matrix_mem[j]);
        counter += 1;
     }
-    result = iterateSumProductOverSndMatrixCol(fstMatrixRow, n1, matrix, k, n2, result);
+    result = iterateSumProductOverSndMatrixCol(fstMatrixRow, n1, matrix, k, n2, result); //dot product - 1 row and 1 column
 for (int i = 0 ; i < k; i++){
      int currentValue = result[i];
-//printf("RESULTTTTTindex: %d currentValue: %d\n", i,  currentValue);
 }
       for (int i = offsetResultIndex, j = 0; i <  k + offsetResultIndex ;  i++, j++){ 
 	   (result_matrix)[i] = result[j];
-	   //printf("fill index: %d\n", i);
     }
       offsetResultIndex += k;
-      
  }
-for (int i = 0 ; i < k*m; i++){
-     int currentValue = (*matrix)[i];
-//printf("Mindex: %d currentValue: %d\n", i,  currentValue);
-}
-//printMatrixGivenDim(result_matrix, m, k);
-//printMatrixGivenDim(*matrix, n2, k);
 
 *matrix = realloc(*matrix, m * k *sizeof(int));
 for (int i = 0; i < m * k; i++){
-//   printf("i:%d\n", i);
    (*matrix)[i] = result_matrix[i];
 }
-//printMatrixGivenDim(*matrix, m, k);
-
-
-
-//for (int i = 0 ; i < m; i++){
-//     int currentValue = (fstMatrixRow)[i];
-//printf("index: %d currentValue: %d\n", i,  currentValue);
-//}
-//printf("HELLO");
-//for (int i = 0 ; i < k; i++){
-//     int currentValue = (result)[i];
-//
-//printf("index: %d resultcurrentValue: %d\n", i,  currentValue);
-//}
-//
-//for (int i = 0 ; i < k*m; i++){
-//     int currentValue = (result_matrix)[i];
-//printf("index: %d currentValue: %d\n", i,  currentValue);
-//}
 
    int_rows = m; 
    int_cols = k;
@@ -291,7 +241,7 @@ void doActionInput(char** action, int rowSize, int colSize, int* matrix, int** m
    
    if (strcmp(action[0], "exit") == 0){
       free(matrix);
-      free(action[0]);      
+      free(action[0]);
       delete_all_matrices();
       exit(EXIT_SUCCESS);
    } else if (strcmp(action[0], "set") == 0){
@@ -354,8 +304,6 @@ void doActionInput(char** action, int rowSize, int colSize, int* matrix, int** m
      } else {
         memcpy(matrix, matrix_mem, rows * cols * sizeof(int)); 
      }
-
-     //printMatrixGivenDim(matrix_mem, rows, cols);
 
      int_rows = rows;
      int_cols = cols;
