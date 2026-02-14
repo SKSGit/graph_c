@@ -242,6 +242,7 @@ void doActionInput(char** action, int rowSize, int colSize, int* matrix, int** m
    if (strcmp(action[0], "exit") == 0){
       free(matrix);
       free(action[0]);
+      free(action);
       delete_all_matrices();
       exit(EXIT_SUCCESS);
    } else if (strcmp(action[0], "set") == 0){
