@@ -127,7 +127,7 @@ for (int i = 0 ; i < n1; i++){
 
 //printf("index: %d AAAH: %d\n", i,  currentValue);
 }
-sequenceOfDotProducts = realloc(sequenceOfDotProducts, (k));
+sequenceOfDotProducts = realloc(sequenceOfDotProducts, (k) * sizeof(int) );
 
  for (int i = 0; i < k; i++){
        offsetCol = i;
