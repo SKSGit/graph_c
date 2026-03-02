@@ -16,3 +16,5 @@ The above command, executes the following inside the program:
 5. generates newrandom 3x5 matrix
 6. fills 5x3 matrix with 4s
 7. matrix multiply previously saved 7x3 matrix with current 5x3 matrix
+
+![demo](https://github.com/user-attachments/assets/92ba7121-681b-45cc-b7a8-b6b747eb460b)
