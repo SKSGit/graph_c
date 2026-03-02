@@ -144,6 +144,27 @@ sequenceOfDotProducts = realloc(sequenceOfDotProducts, (k) * sizeof(int) );
 return sequenceOfDotProducts;
 }
 
+//subtract saved matrix from current matrix, both must have equal dimensions
+void subtractMatrixFromMatrix(int matrixId, int** matrix){
+   struct my_struct *thisMatrix = find_matrix(matrixId);
+   if (thisMatrix == NULL){
+      printf("Matrix with id %d not found\n", matrixId);
+      return;
+   }
+   int *matrix_mem = thisMatrix -> matrix_mem;
+   int rows = thisMatrix -> row;
+   int cols = thisMatrix -> column;
+
+   if (rows != int_rows || cols != int_cols){
+      printf("Dimensions don't match (%dx%d vs %dx%d): cannot subtract\n", int_rows, int_cols, rows, cols);
+      return;
+   }
+
+   for (int i = 0; i < int_rows * int_cols; i++){
+      (*matrix)[i] -= matrix_mem[i];
+   }
+}
+
 //multiply matrix a (m x n) with matrix b (n x k), so the product is m x k
 void multiplyMatrixWithMatrix(int matrixId, int grow, int gcols, int** matrix){
    
@@ -314,7 +335,12 @@ void doActionInput(char** action, int rowSize, int colSize, int* matrix, int** m
 
    } else if (strcmp(action[0], "mm") == 0){
       multiplyMatrixWithMatrix(atoi(action[1]), int_rows, int_cols, matrixp);
-     free(action[0]); 
+     free(action[0]);
+     free(action[1]);
+   } else if (strcmp(action[0], "ms") == 0){
+     //> ms 2 //subtract saved matrix with key 2 from current matrix
+     subtractMatrixFromMatrix(atoi(action[1]), matrixp);
+     free(action[0]);
      free(action[1]);
    }
    else {
@@ -370,6 +396,7 @@ int main(int argc, char *argv[]){
    printf("> save 2 //save matrix with with key 2\n"); 
    printf("> load 2 //find the saved matrix by looking up key 2\n");
    printf("> mm 2 //find the saved matrix by looking up key 2, then multiply it with matrix in current context\n");
+   printf("> ms 2 //subtract saved matrix with key 2 from the current matrix (dimensions must match)\n");
    while(1){
     printMatrixGlobalDim(matrix);    
 
