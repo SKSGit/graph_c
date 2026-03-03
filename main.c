@@ -117,28 +117,25 @@ int product(int a, int b){
 }
 
 int* iterateSumProductOverSndMatrixCol(int* fstMatrRow, int n1, int** matrix, int k, int n2, int* sequenceOfDotProducts){
- int sndMatrixCol[k];
- int offsetCol = 0;
+ int sndMatrixCol[n2];
 
 int dot_product = 0;
 
 sequenceOfDotProducts = realloc(sequenceOfDotProducts, (k) * sizeof(int) );
 
  for (int i = 0; i < k; i++){
-       offsetCol = i;
-
-    for (int j = offsetCol; j < n2 * k; j=j+k){
-       sndMatrixCol[i] = (*matrix)[j];
-
+    int row = 0;
+    for (int j = i; j < n2 * k; j=j+k){
+       sndMatrixCol[row] = (*matrix)[j];
+       row++;
     }
 
     for (int f = 0; f < n1; f++){
-
-       dot_product += fstMatrRow[f] * sndMatrixCol[i];
+       dot_product += fstMatrRow[f] * sndMatrixCol[f];
     }
     sequenceOfDotProducts[i] = dot_product;
     dot_product = 0;
-    
+
  }
 
 return sequenceOfDotProducts;
@@ -223,6 +220,10 @@ void subtractMatrixFromMatrix(int matrixId, int** matrix){
 void multiplyMatrixWithMatrix(int matrixId, int grow, int gcols, int** matrix){
    
    struct my_struct *thisMatrixToSave = find_matrix(matrixId);
+   if (thisMatrixToSave == NULL){
+      printf("Matrix with id %d not found\n", matrixId);
+      return;
+   }
    int *matrix_mem = thisMatrixToSave -> matrix_mem;
    int rows = thisMatrixToSave -> row;
    int cols = thisMatrixToSave -> column;
@@ -240,62 +241,24 @@ void multiplyMatrixWithMatrix(int matrixId, int grow, int gcols, int** matrix){
    if (n1 != n2){
       printf("column and row does not match between both matrices, can't calculate\n");
       return;
-   }  
-   int result_cols = 0;
-   int largest_cols = 0;
-   int largest_rows = 0;
-   if (m > n2){
-      largest_rows = m;
-   } else {
-      largest_rows = n2;
-   }
-   
-   if (n1 > k){
-      largest_cols = n1;
-   } else {
-      largest_cols = k;
-   }
-   
-   if (rows > int_cols){//stored matrix is largest dim
-      result_cols = int_cols;
-   } else {//current matrix is largest dim
-      result_cols = cols;
    }
 
    //new matrix m x k
-   int *result_matrix = malloc(m* k * sizeof(int)); //flat buffer/single contiguous block of memory
+   int *result_matrix = malloc(m * k * sizeof(int)); //flat buffer/single contiguous block of memory
 
  int fstMatrixRow[n1];
-for (int i = 0; i < n1; i++){
-	   fstMatrixRow[i] = 0;
-  }
 
  int offsetRow = 0;
- int counter = 0;
 
- int sndMatrixCol[k];
- int offsetCol = 0;
-
-int* result = malloc(k); 
+int* result = malloc(k * sizeof(int));
 int offsetResultIndex = 0;
  for (int i = 0; i < m * n1; i=i+n1){
-	 if (i == 0){
-	    offsetRow = 0;
-	 } else {
-	    offsetRow += n1;
-	 }
-	 if (counter >= n1){
-	    counter = 0;
-	 }
-    for (int j = offsetRow; j < offsetRow + n1; j++){
-       fstMatrixRow[counter] = matrix_mem[j];
-       counter += 1;
+    offsetRow = i;
+    for (int j = 0; j < n1; j++){
+       fstMatrixRow[j] = matrix_mem[offsetRow + j];
     }
     result = iterateSumProductOverSndMatrixCol(fstMatrixRow, n1, matrix, k, n2, result); //dot product - 1 row and 1 column
-for (int i = 0 ; i < k; i++){
-     int currentValue = result[i];
-}
-      for (int i = offsetResultIndex, j = 0; i <  k + offsetResultIndex ;  i++, j++){ 
+      for (int i = offsetResultIndex, j = 0; i < k + offsetResultIndex; i++, j++){
 	   (result_matrix)[i] = result[j];
     }
       offsetResultIndex += k;
