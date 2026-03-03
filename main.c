@@ -3,7 +3,16 @@
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
+#include <math.h>
+#include <float.h>
 #include "uthash.h"
+
+// Option 3: pre-multiply overflow check for doubles
+// returns true if a*b would overflow to Inf
+bool double_mul_overflows(double a, double b) {
+    if (b == 0.0) return false;
+    return fabs(a) > DBL_MAX / fabs(b);
+}
 
 int int_rows;
 int int_cols;
@@ -80,8 +89,9 @@ void resizeMatrix(int rowDim, int colDim, int preRowDim, int preColDim, double**
 //You never free individual elements
 //You only free the whole matrix once at the end of the program
 
-   int oldSize = preRowDim * preColDim;
-   int newSize = rowDim * colDim;
+   // Option 4: use size_t to avoid int overflow in size calculations
+   size_t oldSize = (size_t)preRowDim * preColDim;
+   size_t newSize = (size_t)rowDim * colDim;
 
    *matrix = realloc(*matrix, newSize * sizeof(double));
  // Initialize new region
@@ -94,7 +104,7 @@ void resizeMatrix(int rowDim, int colDim, int preRowDim, int preColDim, double**
 }
 
 void newRandomMatrix(int rowDim, int colDim, int preRowDim, int preColDim, double** matrix){
-   *matrix = realloc(*matrix, rowDim * colDim * sizeof(double));
+   *matrix = realloc(*matrix, (size_t)rowDim * colDim * sizeof(double)); // Option 4
 
    srand(time(NULL));   // Initialization, should only be called once.
    for (int i = 0; i < rowDim * colDim;  i++){
@@ -106,7 +116,13 @@ void newRandomMatrix(int rowDim, int colDim, int preRowDim, int preColDim, doubl
 
 void multiplyMatrixWithInteger(double value, int rows, int cols, double** matrix){
    for (int i = 0; i < int_cols*int_rows; i++){
-	   (*matrix)[i] = value * (*matrix)[i];
+      // Option 3: pre-check before multiply
+      if (double_mul_overflows(value, (*matrix)[i]))
+         printf("Warning: multiplication would overflow at element [%d]\n", i);
+      (*matrix)[i] = value * (*matrix)[i];
+      // Option 2: post-check for Inf/NaN
+      if (isinf((*matrix)[i]) || isnan((*matrix)[i]))
+         printf("Warning: overflow detected at element [%d]\n", i);
    }
 }
 
@@ -131,7 +147,13 @@ sequenceOfDotProducts = realloc(sequenceOfDotProducts, (k) * sizeof(double) );
     }
 
     for (int f = 0; f < n1; f++){
+       // Option 3: pre-check before multiply
+       if (double_mul_overflows(fstMatrRow[f], sndMatrixCol[f]))
+          printf("Warning: dot product multiplication would overflow at [%d]\n", f);
        dot_product += fstMatrRow[f] * sndMatrixCol[f];
+       // Option 2: post-check for Inf/NaN
+       if (isinf(dot_product) || isnan(dot_product))
+          printf("Warning: dot product overflow detected at [%d]\n", f);
     }
     sequenceOfDotProducts[i] = dot_product;
     dot_product = 0;
@@ -146,15 +168,15 @@ void transposeMatrix(double** matrix){
    int new_rows = int_cols;
    int new_cols = int_rows;
 
-   double *result = malloc(new_rows * new_cols * sizeof(double));
+   double *result = malloc((size_t)new_rows * new_cols * sizeof(double)); // Option 4
    for (int i = 0; i < int_rows; i++){
       for (int j = 0; j < int_cols; j++){
          result[j * new_cols + i] = (*matrix)[i * int_cols + j];
       }
    }
 
-   *matrix = realloc(*matrix, new_rows * new_cols * sizeof(double));
-   memcpy(*matrix, result, new_rows * new_cols * sizeof(double));
+   *matrix = realloc(*matrix, (size_t)new_rows * new_cols * sizeof(double)); // Option 4
+   memcpy(*matrix, result, (size_t)new_rows * new_cols * sizeof(double)); // Option 4
    free(result);
 
    int_rows = new_rows;
@@ -192,6 +214,9 @@ void addMatrixToMatrix(int matrixId, double** matrix){
 
    for (int i = 0; i < int_rows * int_cols; i++){
       (*matrix)[i] += matrix_mem[i];
+      // Option 2: post-check for Inf/NaN
+      if (isinf((*matrix)[i]) || isnan((*matrix)[i]))
+         printf("Warning: overflow detected during add at element [%d]\n", i);
    }
 }
 
@@ -213,6 +238,9 @@ void subtractMatrixFromMatrix(int matrixId, double** matrix){
 
    for (int i = 0; i < int_rows * int_cols; i++){
       (*matrix)[i] -= matrix_mem[i];
+      // Option 2: post-check for Inf/NaN
+      if (isinf((*matrix)[i]) || isnan((*matrix)[i]))
+         printf("Warning: overflow detected during subtract at element [%d]\n", i);
    }
 }
 
@@ -244,7 +272,7 @@ void multiplyMatrixWithMatrix(int matrixId, int grow, int gcols, double** matrix
    }
 
    //new matrix m x k
-   double *result_matrix = malloc(m * k * sizeof(double)); //flat buffer/single contiguous block of memory
+   double *result_matrix = malloc((size_t)m * k * sizeof(double)); // Option 4
 
  double fstMatrixRow[n1];
 
@@ -264,7 +292,7 @@ int offsetResultIndex = 0;
       offsetResultIndex += k;
  }
 
-*matrix = realloc(*matrix, m * k * sizeof(double));
+*matrix = realloc(*matrix, (size_t)m * k * sizeof(double)); // Option 4
 for (int i = 0; i < m * k; i++){
    (*matrix)[i] = result_matrix[i];
 }
@@ -316,12 +344,12 @@ void doActionInput(char** action, int rowSize, int colSize, double* matrix, doub
      //> save 2 //save matrix with with key 2
 
      struct my_struct *thisMatrixToSave = malloc(sizeof(struct my_struct));
-     thisMatrixToSave -> matrix_mem = malloc(int_rows * int_cols * sizeof(double));
+     thisMatrixToSave -> matrix_mem = malloc((size_t)int_rows * int_cols * sizeof(double)); // Option 4
      thisMatrixToSave -> id = atoi(action[1]);
      thisMatrixToSave -> column = int_cols;
      thisMatrixToSave -> row = int_rows;
 
-     memcpy(thisMatrixToSave -> matrix_mem, matrix, int_rows * int_cols * sizeof(double));
+     memcpy(thisMatrixToSave -> matrix_mem, matrix, (size_t)int_rows * int_cols * sizeof(double)); // Option 4
 
      save_matrix(thisMatrixToSave);
      free(action[0]);
@@ -334,14 +362,14 @@ void doActionInput(char** action, int rowSize, int colSize, double* matrix, doub
      int rows = thisMatrixToSave -> row;
      int cols = thisMatrixToSave -> column;
 
-     if (int_rows * int_cols < rows * cols ){
+     if ((size_t)int_rows * int_cols < (size_t)rows * cols){ // Option 4
         //works when loading big matrix to small current matrix
-        *matrixp = realloc(*matrixp, rows * cols * sizeof(double));
+        *matrixp = realloc(*matrixp, (size_t)rows * cols * sizeof(double)); // Option 4
 	for (int i = 0; i < rows * cols;  i++){
 	   (*matrixp)[i] = matrix_mem[i];
         }
      } else {
-        memcpy(matrix, matrix_mem, rows * cols * sizeof(double));
+        memcpy(matrix, matrix_mem, (size_t)rows * cols * sizeof(double)); // Option 4
      }
 
      int_rows = rows;
@@ -412,7 +440,7 @@ int main(int argc, char *argv[]){
    int_rows = *argv[1] - '0'; //first matrix dimension program arg
    int_cols = *argv[2] - '0'; //second matrix dimension program arg
 
-   double *matrix = malloc(int_rows * int_cols * sizeof(double)); //flat buffer/single contiguous block of memory
+   double *matrix = malloc((size_t)int_rows * int_cols * sizeof(double)); // Option 4
    for (int i = 0; i < int_rows * int_cols; i++){
 	   matrix[i] = 0.0;
   }
