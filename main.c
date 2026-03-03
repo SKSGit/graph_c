@@ -144,6 +144,19 @@ sequenceOfDotProducts = realloc(sequenceOfDotProducts, (k) * sizeof(int) );
 return sequenceOfDotProducts;
 }
 
+//overwrite current matrix with identity matrix, only valid for square matrices
+void generateIdentityMatrix(int** matrix){
+   if (int_rows != int_cols){
+      printf("Cannot generate identity: matrix is not square (%dx%d)\n", int_rows, int_cols);
+      return;
+   }
+   for (int i = 0; i < int_rows; i++){
+      for (int j = 0; j < int_cols; j++){
+         (*matrix)[i * int_cols + j] = (i == j) ? 1 : 0;
+      }
+   }
+}
+
 //add saved matrix to current matrix, both must have equal dimensions
 void addMatrixToMatrix(int matrixId, int** matrix){
    struct my_struct *thisMatrix = find_matrix(matrixId);
@@ -358,6 +371,10 @@ void doActionInput(char** action, int rowSize, int colSize, int* matrix, int** m
       multiplyMatrixWithMatrix(atoi(action[1]), int_rows, int_cols, matrixp);
      free(action[0]);
      free(action[1]);
+   } else if (strcmp(action[0], "id") == 0){
+     //> id //overwrite current square matrix with identity matrix
+     generateIdentityMatrix(matrixp);
+     free(action[0]);
    } else if (strcmp(action[0], "ma") == 0){
      //> ma 2 //add saved matrix with key 2 to current matrix
      addMatrixToMatrix(atoi(action[1]), matrixp);
@@ -422,6 +439,7 @@ int main(int argc, char *argv[]){
    printf("> save 2 //save matrix with with key 2\n"); 
    printf("> load 2 //find the saved matrix by looking up key 2\n");
    printf("> mm 2 //find the saved matrix by looking up key 2, then multiply it with matrix in current context\n");
+   printf("> id //overwrite current matrix with identity matrix (must be square)\n");
    printf("> ma 2 //add saved matrix with key 2 to the current matrix (dimensions must match)\n");
    printf("> ms 2 //subtract saved matrix with key 2 from the current matrix (dimensions must match)\n");
    while(1){
