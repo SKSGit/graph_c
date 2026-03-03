@@ -144,6 +144,26 @@ sequenceOfDotProducts = realloc(sequenceOfDotProducts, (k) * sizeof(int) );
 return sequenceOfDotProducts;
 }
 
+//transpose current matrix, swapping rows and columns
+void transposeMatrix(int** matrix){
+   int new_rows = int_cols;
+   int new_cols = int_rows;
+
+   int *result = malloc(new_rows * new_cols * sizeof(int));
+   for (int i = 0; i < int_rows; i++){
+      for (int j = 0; j < int_cols; j++){
+         result[j * new_cols + i] = (*matrix)[i * int_cols + j];
+      }
+   }
+
+   *matrix = realloc(*matrix, new_rows * new_cols * sizeof(int));
+   memcpy(*matrix, result, new_rows * new_cols * sizeof(int));
+   free(result);
+
+   int_rows = new_rows;
+   int_cols = new_cols;
+}
+
 //overwrite current matrix with identity matrix, only valid for square matrices
 void generateIdentityMatrix(int** matrix){
    if (int_rows != int_cols){
@@ -371,6 +391,10 @@ void doActionInput(char** action, int rowSize, int colSize, int* matrix, int** m
       multiplyMatrixWithMatrix(atoi(action[1]), int_rows, int_cols, matrixp);
      free(action[0]);
      free(action[1]);
+   } else if (strcmp(action[0], "tr") == 0){
+     //> tr //transpose current matrix
+     transposeMatrix(matrixp);
+     free(action[0]);
    } else if (strcmp(action[0], "id") == 0){
      //> id //overwrite current square matrix with identity matrix
      generateIdentityMatrix(matrixp);
@@ -439,6 +463,7 @@ int main(int argc, char *argv[]){
    printf("> save 2 //save matrix with with key 2\n"); 
    printf("> load 2 //find the saved matrix by looking up key 2\n");
    printf("> mm 2 //find the saved matrix by looking up key 2, then multiply it with matrix in current context\n");
+   printf("> tr //transpose current matrix\n");
    printf("> id //overwrite current matrix with identity matrix (must be square)\n");
    printf("> ma 2 //add saved matrix with key 2 to the current matrix (dimensions must match)\n");
    printf("> ms 2 //subtract saved matrix with key 2 from the current matrix (dimensions must match)\n");
