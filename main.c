@@ -196,6 +196,35 @@ void generateIdentityMatrix(double** matrix){
    }
 }
 
+//export matrix as a system of linear equations (last column treated as right-hand side, RHS)
+void exportAsEquations(double *matrix, int rows, int cols) {
+    int coef_cols = (cols > 1) ? cols - 1 : cols;
+    bool use_rhs = (cols > 1);
+
+    for (int i = 0; i < rows; i++) {
+        bool first_term = true;
+        for (int j = 0; j < coef_cols; j++) {
+            double coef = matrix[i * cols + j];
+            if (coef == 0.0) continue;
+
+            if (first_term) {
+                printf("%g*x%d", coef, j + 1);
+                first_term = false;
+            } else if (coef < 0) {
+                printf(" - %g*x%d", -coef, j + 1);
+            } else {
+                printf(" + %g*x%d", coef, j + 1);
+            }
+        }
+        if (first_term) printf("0");
+
+        if (use_rhs)
+            printf(" = %g\n", matrix[i * cols + cols - 1]);
+        else
+            printf(" = 0\n");
+    }
+}
+
 //add saved matrix to current matrix, both must have equal dimensions
 void addMatrixToMatrix(int matrixId, double** matrix){
    struct my_struct *thisMatrix = find_matrix(matrixId);
@@ -400,6 +429,10 @@ void doActionInput(char** action, int rowSize, int colSize, double* matrix, doub
      subtractMatrixFromMatrix(atoi(action[1]), matrixp);
      free(action[0]);
      free(action[1]);
+   } else if (strcmp(action[0], "eq") == 0){
+     //> eq //export current matrix as equations (last column is the right-hand side, RHS)
+     exportAsEquations(*matrixp, int_rows, int_cols);
+     free(action[0]);
    }
    else {
       printf("Unrecognized function\n");
@@ -458,6 +491,7 @@ int main(int argc, char *argv[]){
    printf("> id //overwrite current matrix with identity matrix (must be square)\n");
    printf("> ma 2 //add saved matrix with key 2 to the current matrix (dimensions must match)\n");
    printf("> ms 2 //subtract saved matrix with key 2 from the current matrix (dimensions must match)\n");
+   printf("> eq //export current matrix as equations; last column is treated as the right-hand side\n");
    while(1){
     printMatrixGlobalDim(matrix);
 
