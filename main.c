@@ -7,9 +7,9 @@
 #include <float.h>
 #include "uthash.h"
 
-// Option 3: pre-multiply overflow check for doubles
-// returns true if a*b would overflow to Inf
-bool double_mul_overflows(double a, double b) {
+#define INPUT_BUF 1024
+
+static bool double_mul_overflows(double a, double b) {
     if (b == 0.0) return false;
     return fabs(a) > DBL_MAX / fabs(b);
 }
@@ -17,196 +17,140 @@ bool double_mul_overflows(double a, double b) {
 int int_rows;
 int int_cols;
 
-// map for storing matrices
-struct my_struct {
-    UT_hash_handle hh; /* makes this structure hashable */
-    int id;            /* we'll use this field as the key */
-    int column;
-    int row;
-    double *matrix_mem;
+struct SavedMatrix {
+    UT_hash_handle hh;
+    int id;
+    int nrows;
+    int ncols;
+    double *data;
 };
-struct my_struct *saved_matrices = NULL;
+struct SavedMatrix *matrix_store = NULL;
 
+/* ── Allocation helpers ─────────────────────────────────────────────────── */
 
-void save_matrix(struct my_struct *s) {
-    HASH_ADD_INT( saved_matrices, id, s );
+static void *xmalloc(size_t n) {
+    void *p = malloc(n);
+    if (!p) { fprintf(stderr, "Out of memory\n"); exit(1); }
+    return p;
 }
 
-struct my_struct *find_matrix(int id) {
-    struct my_struct *s;
-    HASH_FIND_INT( saved_matrices, &id, s );
+static void *xrealloc(void *p, size_t n) {
+    void *q = realloc(p, n);
+    if (!q) { fprintf(stderr, "Out of memory\n"); exit(1); }
+    return q;
+}
+
+static char *xstrdup(const char *s) {
+    char *p = strdup(s);
+    if (!p) { fprintf(stderr, "Out of memory\n"); exit(1); }
+    return p;
+}
+
+/* ── Hash table helpers ─────────────────────────────────────────────────── */
+
+static void store_matrix(struct SavedMatrix *s) {
+    HASH_ADD_INT(matrix_store, id, s);
+}
+
+static struct SavedMatrix *find_matrix(int id) {
+    struct SavedMatrix *s;
+    HASH_FIND_INT(matrix_store, &id, s);
     return s;
 }
 
-void delete_all_matrices()
-{
-    struct my_struct *current_user;
-    struct my_struct *tmp;
-
-    HASH_ITER(hh, saved_matrices, current_user, tmp) {
-        HASH_DEL(saved_matrices, current_user);  /* delete it (users advances to next) */
-        free(current_user -> matrix_mem);
-	free(current_user);             /* free it */
+static void delete_all_matrices(void) {
+    struct SavedMatrix *cur, *tmp;
+    HASH_ITER(hh, matrix_store, cur, tmp) {
+        HASH_DEL(matrix_store, cur);
+        free(cur->data);
+        free(cur);
     }
 }
 
-void printMatrixGlobalDim(double *given_matrix){//internally uses latest matrix dimensions
-    for(int i = 0; i < int_rows; i++){
-       for(int j = 0; j < int_cols; j++){
-          printf("%g\t", given_matrix[i * int_cols + j]);
-       }
-       printf("\n");
-   }
-}
+/* ── Matrix display ─────────────────────────────────────────────────────── */
 
-void printMatrixGivenDim(double *fetched_matrix, int rows, int cols){//iterates based on given arguments
-    for(int i = 0; i < rows; i++){
-       for(int j = 0; j < cols; j++){
-          printf("%g\t", fetched_matrix[i * cols + j]);
-       }
-       printf("\n");
-   }
-}
-
-void setPointValue(double value, int row, int col, int rowSize, int colSize, double** matrix){
-  (*matrix)[row * int_cols + col] = value; //must pass dimensions rowSize colSize, otherwise C cannot determine where to place value as the array would then be varriable length array (VLA). So pointer arithmetic would fail
-				   //TODO prevent setting value out of bounds of array. C doesnt care if you mess up.
-}
-
-void fillValues(double value, int rows, int cols, double** matrix){
-  for (int i = 0; i < int_cols*int_rows; i++){
-	   (*matrix)[i] = value;
-   }
-}
-
-bool validateInput(char** input){
-  return true;//TODO (0 < input || input  < int_rows -1) && (0 < input || input < int_cols-1);
-}
-
-void resizeMatrix(int rowDim, int colDim, int preRowDim, int preColDim, double** matrix){ //pass a pointer to the pointer, otherwise you will only modify local copy and caller points to old memory block, (make sure functions before this forward the pointer as ** otherwise you risk only having a copy of the pointer)
-//If shrinking, it simply marks the unused tail as free
-//If moving, it copies the old data into a new smaller block
-//You never free individual elements
-//You only free the whole matrix once at the end of the program
-
-   // Option 4: use size_t to avoid int overflow in size calculations
-   size_t oldSize = (size_t)preRowDim * preColDim;
-   size_t newSize = (size_t)rowDim * colDim;
-
-   *matrix = realloc(*matrix, newSize * sizeof(double));
- // Initialize new region
-   for (int i = oldSize; i < newSize; i++){
-	   (*matrix)[i] = 0;
-   }
-   int_rows = rowDim;
-   int_cols = colDim;
-
-}
-
-void newRandomMatrix(int rowDim, int colDim, int preRowDim, int preColDim, double** matrix){
-   *matrix = realloc(*matrix, (size_t)rowDim * colDim * sizeof(double)); // Option 4
-
-   srand(time(NULL));   // Initialization, should only be called once.
-   for (int i = 0; i < rowDim * colDim;  i++){
-	   (*matrix)[i] = rand();
-   }
-   int_rows = rowDim;
-   int_cols = colDim;
-}
-
-void multiplyMatrixWithInteger(double value, int rows, int cols, double** matrix){
-   for (int i = 0; i < int_cols*int_rows; i++){
-      // Option 3: pre-check before multiply
-      if (double_mul_overflows(value, (*matrix)[i]))
-         printf("Warning: multiplication would overflow at element [%d]\n", i);
-      (*matrix)[i] = value * (*matrix)[i];
-      // Option 2: post-check for Inf/NaN
-      if (isinf((*matrix)[i]) || isnan((*matrix)[i]))
-         printf("Warning: overflow detected at element [%d]\n", i);
-   }
-}
-
-double product(double a, double b){
-   double product = 0;
-   product = a * b;
-   return product;
-}
-
-double* iterateSumProductOverSndMatrixCol(double* fstMatrRow, int n1, double** matrix, int k, int n2, double* sequenceOfDotProducts){
- double sndMatrixCol[n2];
-
-double dot_product = 0;
-
-sequenceOfDotProducts = realloc(sequenceOfDotProducts, (k) * sizeof(double) );
-
- for (int i = 0; i < k; i++){
-    int row = 0;
-    for (int j = i; j < n2 * k; j=j+k){
-       sndMatrixCol[row] = (*matrix)[j];
-       row++;
+static void printMatrix(double *m) {
+    for (int i = 0; i < int_rows; i++) {
+        for (int j = 0; j < int_cols; j++)
+            printf("%g\t", m[i * int_cols + j]);
+        printf("\n");
     }
+}
 
-    for (int f = 0; f < n1; f++){
-       // Option 3: pre-check before multiply
-       if (double_mul_overflows(fstMatrRow[f], sndMatrixCol[f]))
-          printf("Warning: dot product multiplication would overflow at [%d]\n", f);
-       dot_product += fstMatrRow[f] * sndMatrixCol[f];
-       // Option 2: post-check for Inf/NaN
-       if (isinf(dot_product) || isnan(dot_product))
-          printf("Warning: dot product overflow detected at [%d]\n", f);
+/* ── Core operations ────────────────────────────────────────────────────── */
+
+static void setPointValue(double value, int row, int col, int rows, int cols, double *matrix) {
+    if (row < 0 || row >= rows || col < 0 || col >= cols) {
+        printf("Error: position (%d,%d) out of bounds for %dx%d matrix\n", row, col, rows, cols);
+        return;
     }
-    sequenceOfDotProducts[i] = dot_product;
-    dot_product = 0;
-
- }
-
-return sequenceOfDotProducts;
+    matrix[row * cols + col] = value;
 }
 
-//transpose current matrix, swapping rows and columns
-void transposeMatrix(double** matrix){
-   int new_rows = int_cols;
-   int new_cols = int_rows;
-
-   double *result = malloc((size_t)new_rows * new_cols * sizeof(double)); // Option 4
-   for (int i = 0; i < int_rows; i++){
-      for (int j = 0; j < int_cols; j++){
-         result[j * new_cols + i] = (*matrix)[i * int_cols + j];
-      }
-   }
-
-   *matrix = realloc(*matrix, (size_t)new_rows * new_cols * sizeof(double)); // Option 4
-   memcpy(*matrix, result, (size_t)new_rows * new_cols * sizeof(double)); // Option 4
-   free(result);
-
-   int_rows = new_rows;
-   int_cols = new_cols;
+static void fillValues(double value, int rows, int cols, double *matrix) {
+    for (int i = 0; i < rows * cols; i++)
+        matrix[i] = value;
 }
 
-//overwrite current matrix with identity matrix, only valid for square matrices
-void generateIdentityMatrix(double** matrix){
-   if (int_rows != int_cols){
-      printf("Cannot generate identity: matrix is not square (%dx%d)\n", int_rows, int_cols);
-      return;
-   }
-   for (int i = 0; i < int_rows; i++){
-      for (int j = 0; j < int_cols; j++){
-         (*matrix)[i * int_cols + j] = (i == j) ? 1.0 : 0.0;
-      }
-   }
+static void resizeMatrix(int rowDim, int colDim, int preRowDim, int preColDim, double **matrix) {
+    size_t oldSize = (size_t)preRowDim * preColDim;
+    size_t newSize = (size_t)rowDim * colDim;
+    *matrix = xrealloc(*matrix, newSize * sizeof(double));
+    for (size_t i = oldSize; i < newSize; i++)
+        (*matrix)[i] = 0.0;
+    int_rows = rowDim;
+    int_cols = colDim;
 }
 
-//export matrix as a system of linear equations (last column treated as right-hand side, RHS)
-void exportAsEquations(double *matrix, int rows, int cols) {
+static void newRandomMatrix(int rowDim, int colDim, double **matrix) {
+    *matrix = xrealloc(*matrix, (size_t)rowDim * colDim * sizeof(double));
+    for (int i = 0; i < rowDim * colDim; i++)
+        (*matrix)[i] = rand() % 100;
+    int_rows = rowDim;
+    int_cols = colDim;
+}
+
+static void multiplyMatrixWithInteger(double value, int rows, int cols, double *matrix) {
+    for (int i = 0; i < rows * cols; i++) {
+        if (double_mul_overflows(value, matrix[i]))
+            printf("Warning: multiplication would overflow at element [%d]\n", i);
+        matrix[i] = value * matrix[i];
+        if (isinf(matrix[i]) || isnan(matrix[i]))
+            printf("Warning: overflow detected at element [%d]\n", i);
+    }
+}
+
+static void transposeMatrix(double **matrix) {
+    int new_rows = int_cols;
+    int new_cols = int_rows;
+    double *result = xmalloc((size_t)new_rows * new_cols * sizeof(double));
+    for (int i = 0; i < int_rows; i++)
+        for (int j = 0; j < int_cols; j++)
+            result[j * new_cols + i] = (*matrix)[i * int_cols + j];
+    free(*matrix);
+    *matrix = result;
+    int_rows = new_rows;
+    int_cols = new_cols;
+}
+
+static void generateIdentityMatrix(double **matrix) {
+    if (int_rows != int_cols) {
+        printf("Cannot generate identity: matrix is not square (%dx%d)\n", int_rows, int_cols);
+        return;
+    }
+    for (int i = 0; i < int_rows; i++)
+        for (int j = 0; j < int_cols; j++)
+            (*matrix)[i * int_cols + j] = (i == j) ? 1.0 : 0.0;
+}
+
+static void exportAsEquations(double *matrix, int rows, int cols) {
     int coef_cols = (cols > 1) ? cols - 1 : cols;
     bool use_rhs = (cols > 1);
-
     for (int i = 0; i < rows; i++) {
         bool first_term = true;
         for (int j = 0; j < coef_cols; j++) {
             double coef = matrix[i * cols + j];
             if (coef == 0.0) continue;
-
             if (first_term) {
                 printf("%g*x%d", coef, j + 1);
                 first_term = false;
@@ -217,7 +161,6 @@ void exportAsEquations(double *matrix, int rows, int cols) {
             }
         }
         if (first_term) printf("0");
-
         if (use_rhs)
             printf(" = %g\n", matrix[i * cols + cols - 1]);
         else
@@ -225,283 +168,242 @@ void exportAsEquations(double *matrix, int rows, int cols) {
     }
 }
 
-//add saved matrix to current matrix, both must have equal dimensions
-void addMatrixToMatrix(int matrixId, double** matrix){
-   struct my_struct *thisMatrix = find_matrix(matrixId);
-   if (thisMatrix == NULL){
-      printf("Matrix with id %d not found\n", matrixId);
-      return;
-   }
-   double *matrix_mem = thisMatrix -> matrix_mem;
-   int rows = thisMatrix -> row;
-   int cols = thisMatrix -> column;
-
-   if (rows != int_rows || cols != int_cols){
-      printf("Dimensions don't match (%dx%d vs %dx%d): cannot add\n", int_rows, int_cols, rows, cols);
-      return;
-   }
-
-   for (int i = 0; i < int_rows * int_cols; i++){
-      (*matrix)[i] += matrix_mem[i];
-      // Option 2: post-check for Inf/NaN
-      if (isinf((*matrix)[i]) || isnan((*matrix)[i]))
-         printf("Warning: overflow detected during add at element [%d]\n", i);
-   }
-}
-
-//subtract saved matrix from current matrix, both must have equal dimensions
-void subtractMatrixFromMatrix(int matrixId, double** matrix){
-   struct my_struct *thisMatrix = find_matrix(matrixId);
-   if (thisMatrix == NULL){
-      printf("Matrix with id %d not found\n", matrixId);
-      return;
-   }
-   double *matrix_mem = thisMatrix -> matrix_mem;
-   int rows = thisMatrix -> row;
-   int cols = thisMatrix -> column;
-
-   if (rows != int_rows || cols != int_cols){
-      printf("Dimensions don't match (%dx%d vs %dx%d): cannot subtract\n", int_rows, int_cols, rows, cols);
-      return;
-   }
-
-   for (int i = 0; i < int_rows * int_cols; i++){
-      (*matrix)[i] -= matrix_mem[i];
-      // Option 2: post-check for Inf/NaN
-      if (isinf((*matrix)[i]) || isnan((*matrix)[i]))
-         printf("Warning: overflow detected during subtract at element [%d]\n", i);
-   }
-}
-
-//multiply matrix a (m x n) with matrix b (n x k), so the product is m x k
-void multiplyMatrixWithMatrix(int matrixId, int grow, int gcols, double** matrix){
-
-   struct my_struct *thisMatrixToSave = find_matrix(matrixId);
-   if (thisMatrixToSave == NULL){
-      printf("Matrix with id %d not found\n", matrixId);
-      return;
-   }
-   double *matrix_mem = thisMatrixToSave -> matrix_mem;
-   int rows = thisMatrixToSave -> row;
-   int cols = thisMatrixToSave -> column;
-
-   //first: m x n1,
-   int m = rows;
-   int n1 = cols;
-   printf("m: %d, n1: %d\n", m, n1);
-
-   //second: n2 x k
-   int n2 = int_rows;
-   int k = int_cols;
-   printf("n2: %d, k: %d\n", n2, k);
-
-   if (n1 != n2){
-      printf("column and row does not match between both matrices, can't calculate\n");
-      return;
-   }
-
-   //new matrix m x k
-   double *result_matrix = malloc((size_t)m * k * sizeof(double)); // Option 4
-
- double fstMatrixRow[n1];
-
- int offsetRow = 0;
-
-double* result = malloc(k * sizeof(double));
-int offsetResultIndex = 0;
- for (int i = 0; i < m * n1; i=i+n1){
-    offsetRow = i;
-    for (int j = 0; j < n1; j++){
-       fstMatrixRow[j] = matrix_mem[offsetRow + j];
+static void addMatrixToMatrix(int matrixId, double **matrix) {
+    struct SavedMatrix *s = find_matrix(matrixId);
+    if (!s) { printf("Matrix with id %d not found\n", matrixId); return; }
+    if (s->nrows != int_rows || s->ncols != int_cols) {
+        printf("Dimensions don't match (%dx%d vs %dx%d): cannot add\n",
+               int_rows, int_cols, s->nrows, s->ncols);
+        return;
     }
-    result = iterateSumProductOverSndMatrixCol(fstMatrixRow, n1, matrix, k, n2, result); //dot product - 1 row and 1 column
-      for (int i = offsetResultIndex, j = 0; i < k + offsetResultIndex; i++, j++){
-	   (result_matrix)[i] = result[j];
+    for (int i = 0; i < int_rows * int_cols; i++) {
+        (*matrix)[i] += s->data[i];
+        if (isinf((*matrix)[i]) || isnan((*matrix)[i]))
+            printf("Warning: overflow detected during add at element [%d]\n", i);
     }
-      offsetResultIndex += k;
- }
-
-*matrix = realloc(*matrix, (size_t)m * k * sizeof(double)); // Option 4
-for (int i = 0; i < m * k; i++){
-   (*matrix)[i] = result_matrix[i];
 }
 
-   int_rows = m;
-   int_cols = k;
-   free(result);
-   free(result_matrix);
+static void subtractMatrixFromMatrix(int matrixId, double **matrix) {
+    struct SavedMatrix *s = find_matrix(matrixId);
+    if (!s) { printf("Matrix with id %d not found\n", matrixId); return; }
+    if (s->nrows != int_rows || s->ncols != int_cols) {
+        printf("Dimensions don't match (%dx%d vs %dx%d): cannot subtract\n",
+               int_rows, int_cols, s->nrows, s->ncols);
+        return;
+    }
+    for (int i = 0; i < int_rows * int_cols; i++) {
+        (*matrix)[i] -= s->data[i];
+        if (isinf((*matrix)[i]) || isnan((*matrix)[i]))
+            printf("Warning: overflow detected during subtract at element [%d]\n", i);
+    }
 }
 
-void doActionInput(char** action, int rowSize, int colSize, double* matrix, double** matrixp){
+/* A (saved, m×n) × B (current, n×k) → result (m×k) */
+static void multiplyMatrixWithMatrix(int matrixId, double **matrix) {
+    struct SavedMatrix *s = find_matrix(matrixId);
+    if (!s) { printf("Matrix with id %d not found\n", matrixId); return; }
 
-   if (strcmp(action[0], "exit") == 0){
-      free(matrix);
-      free(action[0]);
-      free(action);
-      delete_all_matrices();
-      exit(EXIT_SUCCESS);
-   } else if (strcmp(action[0], "set") == 0){
-     //> set 2 2 7 //set value in row 2 column 2 to value 7
-       setPointValue(atof(action[3]), atoi(action[1]), atoi(action[2]), int_rows, int_cols, &matrix);
-       free(action[0]);
-       free(action[1]);
-       free(action[2]);
-       free(action[3]);
-   } else if (strcmp(action[0], "fill") == 0){
-     //> fill 3 //fill entire matrix with value 3
-      fillValues(atof(action[1]), int_rows, int_cols, &matrix);
-      free(action[0]);
-      free(action[1]);
-   } else if (strcmp(action[0], "resize") == 0){
-     //> resize 4 3 //resize existing matrix to 4 x 3
-      resizeMatrix(atoi(action[1]), atoi(action[2]), int_rows, int_cols, matrixp);
-      free(action[0]);
-      free(action[1]);
-      free(action[2]);
-   } else if (strcmp(action[0], "newrand") == 0){
-     //> newrand 4 3 //make new 4 x 3 matrix with random values
-     newRandomMatrix(atoi(action[1]), atoi(action[2]), int_rows, int_cols, matrixp);
-     free(action[0]);
-     free(action[1]);
-     free(action[2]);
-   } else if (strcmp(action[0], "mult") == 0){
-     //> mult 2 //multiply each value in matrix by 2
-     multiplyMatrixWithInteger(atof(action[1]), int_rows, int_cols, &matrix);
-     free(action[0]);
-     free(action[1]);
-   } else if (strcmp(action[0], "save") == 0){
-     //> save 2 //save matrix with with key 2
+    int m = s->nrows, n = s->ncols;
+    int k = int_cols;
 
-     struct my_struct *thisMatrixToSave = malloc(sizeof(struct my_struct));
-     thisMatrixToSave -> matrix_mem = malloc((size_t)int_rows * int_cols * sizeof(double)); // Option 4
-     thisMatrixToSave -> id = atoi(action[1]);
-     thisMatrixToSave -> column = int_cols;
-     thisMatrixToSave -> row = int_rows;
+    if (n != int_rows) {
+        printf("Dimensions incompatible: saved is %dx%d, current is %dx%d\n",
+               m, n, int_rows, k);
+        return;
+    }
 
-     memcpy(thisMatrixToSave -> matrix_mem, matrix, (size_t)int_rows * int_cols * sizeof(double)); // Option 4
+    double *result = xmalloc((size_t)m * k * sizeof(double));
 
-     save_matrix(thisMatrixToSave);
-     free(action[0]);
-     free(action[1]);
-
-   } else if (strcmp(action[0], "load") == 0){
-     //> load 2 //find the saved matrix by looking up key 2
-     struct my_struct *thisMatrixToSave = find_matrix(atoi(action[1]));
-     double *matrix_mem = thisMatrixToSave -> matrix_mem;
-     int rows = thisMatrixToSave -> row;
-     int cols = thisMatrixToSave -> column;
-
-     if ((size_t)int_rows * int_cols < (size_t)rows * cols){ // Option 4
-        //works when loading big matrix to small current matrix
-        *matrixp = realloc(*matrixp, (size_t)rows * cols * sizeof(double)); // Option 4
-	for (int i = 0; i < rows * cols;  i++){
-	   (*matrixp)[i] = matrix_mem[i];
+    for (int i = 0; i < m; i++) {
+        for (int j = 0; j < k; j++) {
+            double dot = 0.0;
+            for (int p = 0; p < n; p++) {
+                double a = s->data[i * n + p];
+                double b = (*matrix)[p * k + j];
+                if (double_mul_overflows(a, b))
+                    printf("Warning: dot product multiplication would overflow at [%d,%d]\n", i, j);
+                dot += a * b;
+                if (isinf(dot) || isnan(dot))
+                    printf("Warning: dot product overflow detected at [%d,%d]\n", i, j);
+            }
+            result[i * k + j] = dot;
         }
-     } else {
-        memcpy(matrix, matrix_mem, (size_t)rows * cols * sizeof(double)); // Option 4
-     }
+    }
 
-     int_rows = rows;
-     int_cols = cols;
-
-     free(action[0]);
-     free(action[1]);
-
-   } else if (strcmp(action[0], "mm") == 0){
-      multiplyMatrixWithMatrix(atoi(action[1]), int_rows, int_cols, matrixp);
-     free(action[0]);
-     free(action[1]);
-   } else if (strcmp(action[0], "tr") == 0){
-     //> tr //transpose current matrix
-     transposeMatrix(matrixp);
-     free(action[0]);
-   } else if (strcmp(action[0], "id") == 0){
-     //> id //overwrite current square matrix with identity matrix
-     generateIdentityMatrix(matrixp);
-     free(action[0]);
-   } else if (strcmp(action[0], "ma") == 0){
-     //> ma 2 //add saved matrix with key 2 to current matrix
-     addMatrixToMatrix(atoi(action[1]), matrixp);
-     free(action[0]);
-     free(action[1]);
-   } else if (strcmp(action[0], "ms") == 0){
-     //> ms 2 //subtract saved matrix with key 2 from current matrix
-     subtractMatrixFromMatrix(atoi(action[1]), matrixp);
-     free(action[0]);
-     free(action[1]);
-   } else if (strcmp(action[0], "eq") == 0){
-     //> eq //export current matrix as equations (last column is the right-hand side, RHS)
-     exportAsEquations(*matrixp, int_rows, int_cols);
-     free(action[0]);
-   }
-   else {
-      printf("Unrecognized function\n");
-   }
-
+    free(*matrix);
+    *matrix = result;
+    int_rows = m;
+    int_cols = k;
 }
 
-void parseProgramInput(char** in, int rowSize, int colSize, double* matrix, double** matrixp){
-  //TODO validate arg 'in' along with dimensions rowSize and colSize
+/* ── Tokenizer ──────────────────────────────────────────────────────────── */
 
-  if (validateInput(in) == false){
-     printf("Error incorrect input or dimension \n");
-     return;
-  }
-  doActionInput(in, int_rows, int_cols, matrix, matrixp);
-}
-
-char** tokenize(char in[]){
-    char* temp = strdup(in);
-    char* token = strtok(temp, " ");
-
-    char** list = NULL;
+static char **tokenize(const char *in, int *out_count) {
+    char *temp = xstrdup(in);
+    char *token = strtok(temp, " \t\n\r");
+    char **list = NULL;
     int count = 0;
-
-    while(token != NULL){
-
-    list = realloc(list, (count + 1) * sizeof(char*));
-     list[count] = strdup(token);
-     (count)++;
-          token = strtok(NULL," ");
+    while (token) {
+        list = xrealloc(list, (size_t)(count + 1) * sizeof(char *));
+        list[count++] = xstrdup(token);
+        token = strtok(NULL, " \t\n\r");
     }
     free(temp);
+    list = xrealloc(list, (size_t)(count + 1) * sizeof(char *));
+    list[count] = NULL;
+    if (out_count) *out_count = count;
     return list;
 }
 
-int main(int argc, char *argv[]){
-
-   int_rows = *argv[1] - '0'; //first matrix dimension program arg
-   int_cols = *argv[2] - '0'; //second matrix dimension program arg
-
-   double *matrix = malloc((size_t)int_rows * int_cols * sizeof(double)); // Option 4
-   for (int i = 0; i < int_rows * int_cols; i++){
-	   matrix[i] = 0.0;
-  }
-   printf("This is graph program: Hello %s \n","User");
-   printf("The Graph dimension is %i x %i\n", int_rows, int_cols);
-   printf("> set 2 2 7 //set value in row 2 column 2 to value 7\n");
-   printf("> fill 3 //fill entire matrix with value 3\n");
-   printf("> resize 4 3 //make new 4 x 3 matrix\n");
-   printf("> newrand 4 3 //make new 4 x 3 matrix with random values\n");
-   printf("> mult 2 //multiply each value in matrix by 2\n");
-   printf("> save 2 //save matrix with with key 2\n");
-   printf("> load 2 //find the saved matrix by looking up key 2\n");
-   printf("> mm 2 //find the saved matrix by looking up key 2, then multiply it with matrix in current context\n");
-   printf("> tr //transpose current matrix\n");
-   printf("> id //overwrite current matrix with identity matrix (must be square)\n");
-   printf("> ma 2 //add saved matrix with key 2 to the current matrix (dimensions must match)\n");
-   printf("> ms 2 //subtract saved matrix with key 2 from the current matrix (dimensions must match)\n");
-   printf("> eq //export current matrix as equations; last column is treated as the right-hand side\n");
-   while(1){
-    printMatrixGlobalDim(matrix);
-
-    char in[100];
-    scanf(" %[^\n]", in);
-
-    char** list = tokenize(in);
-
-    parseProgramInput(list, int_rows, int_cols, matrix, &matrix);
-
+static void free_tokens(char **list) {
+    if (!list) return;
+    for (int i = 0; list[i]; i++)
+        free(list[i]);
     free(list);
+}
+
+/* ── Command handlers ───────────────────────────────────────────────────── */
+
+static void cmd_set(char **t, double **mp) {
+    setPointValue(atof(t[3]), atoi(t[1]), atoi(t[2]), int_rows, int_cols, *mp);
+}
+static void cmd_fill(char **t, double **mp) {
+    fillValues(atof(t[1]), int_rows, int_cols, *mp);
+}
+static void cmd_resize(char **t, double **mp) {
+    resizeMatrix(atoi(t[1]), atoi(t[2]), int_rows, int_cols, mp);
+}
+static void cmd_newrand(char **t, double **mp) {
+    newRandomMatrix(atoi(t[1]), atoi(t[2]), mp);
+}
+static void cmd_mult(char **t, double **mp) {
+    multiplyMatrixWithInteger(atof(t[1]), int_rows, int_cols, *mp);
+}
+static void cmd_save(char **t, double **mp) {
+    int id = atoi(t[1]);
+    struct SavedMatrix *existing = find_matrix(id);
+    if (existing) {
+        free(existing->data);
+        existing->data  = xmalloc((size_t)int_rows * int_cols * sizeof(double));
+        existing->nrows = int_rows;
+        existing->ncols = int_cols;
+        memcpy(existing->data, *mp, (size_t)int_rows * int_cols * sizeof(double));
+        return;
     }
+    struct SavedMatrix *s = xmalloc(sizeof(struct SavedMatrix));
+    s->data  = xmalloc((size_t)int_rows * int_cols * sizeof(double));
+    s->id    = id;
+    s->nrows = int_rows;
+    s->ncols = int_cols;
+    memcpy(s->data, *mp, (size_t)int_rows * int_cols * sizeof(double));
+    store_matrix(s);
+}
+static void cmd_load(char **t, double **mp) {
+    int id = atoi(t[1]);
+    struct SavedMatrix *s = find_matrix(id);
+    if (!s) { printf("Matrix with id %d not found\n", id); return; }
+    *mp = xrealloc(*mp, (size_t)s->nrows * s->ncols * sizeof(double));
+    memcpy(*mp, s->data, (size_t)s->nrows * s->ncols * sizeof(double));
+    int_rows = s->nrows;
+    int_cols = s->ncols;
+}
+static void cmd_mm(char **t, double **mp) { multiplyMatrixWithMatrix(atoi(t[1]), mp); }
+static void cmd_ma(char **t, double **mp) { addMatrixToMatrix(atoi(t[1]), mp); }
+static void cmd_ms(char **t, double **mp) { subtractMatrixFromMatrix(atoi(t[1]), mp); }
+
+static void cmd_tr(double **mp) { transposeMatrix(mp); }
+static void cmd_id(double **mp) { generateIdentityMatrix(mp); }
+static void cmd_eq(double **mp) { exportAsEquations(*mp, int_rows, int_cols); }
+
+/* ── Dispatch ───────────────────────────────────────────────────────────── */
+
+typedef struct { const char *name; int args; void (*fn)(char **, double **); } ArgCmd;
+typedef struct { const char *name;            void (*fn)(double **);         } NoArgCmd;
+
+static const ArgCmd arg_commands[] = {
+    {"set",     3, cmd_set},
+    {"fill",    1, cmd_fill},
+    {"resize",  2, cmd_resize},
+    {"newrand", 2, cmd_newrand},
+    {"mult",    1, cmd_mult},
+    {"save",    1, cmd_save},
+    {"load",    1, cmd_load},
+    {"mm",      1, cmd_mm},
+    {"ma",      1, cmd_ma},
+    {"ms",      1, cmd_ms},
+    {NULL,      0, NULL}
+};
+
+static const NoArgCmd noarg_commands[] = {
+    {"tr", cmd_tr},
+    {"id", cmd_id},
+    {"eq", cmd_eq},
+    {NULL, NULL}
+};
+
+/* Returns 1 if the REPL should exit, 0 otherwise. */
+static int dispatch(char **tokens, int count, double **mp) {
+    if (strcmp(tokens[0], "exit") == 0) return 1;
+
+    for (const ArgCmd *c = arg_commands; c->name; c++) {
+        if (strcmp(tokens[0], c->name) == 0) {
+            if (count - 1 < c->args) {
+                printf("Error: '%s' requires %d argument(s)\n", c->name, c->args);
+                return 0;
+            }
+            c->fn(tokens, mp);
+            return 0;
+        }
+    }
+
+    for (const NoArgCmd *c = noarg_commands; c->name; c++) {
+        if (strcmp(tokens[0], c->name) == 0) {
+            c->fn(mp);
+            return 0;
+        }
+    }
+
+    printf("Unrecognized command: %s\n", tokens[0]);
+    return 0;
+}
+
+/* ── Entry point ────────────────────────────────────────────────────────── */
+
+int main(int argc, char *argv[]) {
+    if (argc < 3) {
+        fprintf(stderr, "Usage: %s <rows> <cols>\n", argv[0]);
+        return 1;
+    }
+    int_rows = atoi(argv[1]);
+    int_cols = atoi(argv[2]);
+    if (int_rows <= 0 || int_cols <= 0) {
+        fprintf(stderr, "Error: dimensions must be positive integers\n");
+        return 1;
+    }
+
+    srand((unsigned int)time(NULL));
+
+    double *matrix = calloc((size_t)int_rows * int_cols, sizeof(double));
+    if (!matrix) { fprintf(stderr, "Out of memory\n"); return 1; }
+
+    printf("Matrix calculator: %dx%d\n", int_rows, int_cols);
+    printf("Commands: set <r> <c> <v>, fill <v>, resize <r> <c>, newrand <r> <c>,\n");
+    printf("  mult <v>, save <id>, load <id>, mm <id>, tr, id, ma <id>, ms <id>, eq, exit\n");
+
+    char in[INPUT_BUF];
+    while (1) {
+        printMatrix(matrix);
+        if (!fgets(in, sizeof(in), stdin))
+            break;
+        int count = 0;
+        char **tokens = tokenize(in, &count);
+        if (count == 0) { free_tokens(tokens); continue; }
+        int should_exit = dispatch(tokens, count, &matrix);
+        free_tokens(tokens);
+        if (should_exit) break;
+    }
+
+    free(matrix);
+    delete_all_matrices();
+    return 0;
 }

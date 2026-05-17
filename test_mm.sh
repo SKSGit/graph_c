@@ -14,7 +14,7 @@ run_test() {
     local rows="$5"
 
     actual=$(printf '%s\n' "$commands" | ./main $dims 2>/dev/null \
-        | grep -P '^-?\d+(\t-?\d+)*\t*$' \
+        | grep -P '^-?[0-9]+(\.[0-9]+)?([eE][+-]?[0-9]+)?(\t-?[0-9]+(\.[0-9]+)?([eE][+-]?[0-9]+)?)*\t*$' \
         | tail -n "$rows" \
         | sed 's/\t$//' \
         | tr '\t' ' ')

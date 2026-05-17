@@ -6,15 +6,23 @@ run_test() {
     local desc="$1"
     local input="$2"
     local expected="$3"
-    local output
-    output=$(printf "%s\nexit\n" "$input" | ./main 3 3 2>/dev/null)
-    if echo "$output" | grep -qF -- "$expected"; then
+    local matrix_output
+
+    # Filter to matrix-only lines (tab-separated numbers; strips welcome/help/error text).
+    matrix_output=$(printf "%s\nexit\n" "$input" | ./main 3 3 2>/dev/null \
+                    | grep -P '^[-+0-9.eE\t]+$')
+
+    # Escape regex metacharacters in the expected value, then match at tab/line boundaries
+    # so "5" does not match "15" or "50".
+    local pat
+    pat=$(printf '%s' "$expected" | sed 's/\./\\./g; s/+/\\+/g')
+    if echo "$matrix_output" | grep -qP "(^|\t)${pat}(\t|$)"; then
         echo "PASS: $desc"
         ((PASS++))
     else
         echo "FAIL: $desc"
         echo "  expected to find: $expected"
-        echo "  actual output:    $output"
+        echo "  matrix output:    $matrix_output"
         ((FAIL++))
     fi
 }
